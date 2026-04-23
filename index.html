@@ -1588,14 +1588,13 @@ function imprimirFicha(id){
   </div>
 
   <div class="termo">
-    <div class="termo-title">Autorização de Uso de Imagem</div>
-    <p>Eu, <strong>${p.nome}</strong>, portador(a) do CPF <strong>${p.cpf||'________________'}</strong>, RG <strong>${p.rg||'________________'}</strong>, residente em ${p.end||'___________'}${p.num?', '+p.num:''}, ${p.cid||'________'} - ${p.est||'__'}, <strong>AUTORIZO</strong> a ONG Ampare — Assistência Múltipla de Amparo Renovada a utilizar minha imagem e dados cadastrais para fins de identificação, divulgação institucional e relatórios sociais, de acordo com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).</p>
-    <p>Declaro que as informações prestadas são verdadeiras e que estou ciente dos direitos e deveres estabelecidos pela entidade.</p>
-    <p>Ibiporã, _____ de __________________ de ________.</p>
+    <div class="termo-title">Autorização para Publicação de Imagem</div>
+    <p>Eu, <strong>${p.nome||'_______________________________'}</strong>, RG <strong>${p.rg||'____________________'}</strong> CPF <strong>${p.cpf||'____________________'}</strong>, afirmo que as informações que relatei na ficha de cadastro é expressão da verdade e que autorizo a publicação da minha imagem ou de qualquer membro da minha família, mesmo sendo menor de idade, desde que seja em prol de divulgar as atividades em prol de que a mesma possa receber doações de qualquer tipo e que tenho ciência que não poderei fazer nenhum tipo de reclamação via judicial pela divulgação em mídias sociais da minha imagem e de meus parentes.</p>
+    <p>Tenho ciência de que toda divulgação que a ASSOCIAÇÃO AMPARE faz é em benefício da entidade e de nós usuários, para que possamos receber mais ajuda e colaboração da população. E que também é um meio da sociedade acompanhar as atividades realizadas pela ASSOCIAÇÃO AMPARE.</p>
+    <p>Tenho ciência que sem apresentar a carteira de identificação do usuário, não poderei receber os benefícios, mesmo participando das palestras, que menores de idade não podem receber o benefício do titular do cadastro.</p>
+    <p style="margin-top:10px">Ibiporã, _____ de __________________ de ________.</p>
     <div class="assina">
-      <div class="assina-line">Assinatura do Beneficiário</div>
-      <div class="assina-line">Responsável pela ONG Ampare</div>
-      <div class="assina-line">Testemunha</div>
+      <div class="assina-line">Assinatura do Usuário Titular (cadastrado)</div>
     </div>
   </div>
   <script>window.onload=()=>window.print();<\/script>
