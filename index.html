@@ -277,10 +277,36 @@ textarea{resize:vertical;min-height:65px}
 .foto-av{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.3);flex-shrink:0}
 .foto-av-sm{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0}
 ::-webkit-scrollbar{width:5px}
+
+/* ——— RESPONSIVO MOBILE ——— */
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+.sb-overlay.show{display:block}
+.hamburger{display:none;position:fixed;top:12px;left:12px;z-index:101;background:var(--v);border:none;border-radius:8px;padding:8px 10px;cursor:pointer;color:#fff;font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+@media(max-width:768px){
+  .hamburger{display:flex;align-items:center;justify-content:center}
+  .sb{transform:translateX(-100%);transition:transform .25s ease;z-index:100}
+  .sb.open{transform:translateX(0)}
+  .sb.mini{width:232px;transform:translateX(-100%)}
+  .sb.mini.open{transform:translateX(0)}
+  .sb-toggle{display:none}
+  .main{margin-left:0!important;padding:16px;padding-top:56px}
+  .main.mini{margin-left:0}
+  .cg4{grid-template-columns:1fr 1fr}
+  .ch-grid{grid-template-columns:1fr}
+  .fg{grid-template-columns:1fr}
+  .fg3{grid-template-columns:1fr}
+  .pt{font-size:22px}
+  .md{width:100%;max-width:100%;border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:90vh}
+  .mo{align-items:flex-end}
+}
 ::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:3px}
 </style>
 </head>
 <body>
+<!-- HAMBURGUER -->
+<button class="hamburger" id="hamburger" onclick="toggleMenu()">☰</button>
+<div class="sb-overlay" id="sb-overlay" onclick="fecharMenu()"></div>
+
 <!-- LOGIN -->
 <div class="login-screen" id="login-screen">
   <div class="login-box">
@@ -744,6 +770,7 @@ function toast(msg,err){
 // ——— NAV ———
 function goPage(id){
   if(camAtiva) pararCam();
+  if(window.innerWidth<=768) fecharMenu();
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
@@ -1408,6 +1435,24 @@ function removerFoto(){
   document.getElementById('btn-rm-foto').style.display='none';
   const fi = document.getElementById('c-foto-file');
   if(fi) fi.value='';
+}
+
+// ——— MENU MOBILE ———
+function toggleMenu(){
+  const sb = document.querySelector('.sb');
+  const overlay = document.getElementById('sb-overlay');
+  const hb = document.getElementById('hamburger');
+  sb.classList.toggle('open');
+  overlay.classList.toggle('show');
+  hb.textContent = sb.classList.contains('open') ? '✕' : '☰';
+}
+function fecharMenu(){
+  const sb = document.querySelector('.sb');
+  const overlay = document.getElementById('sb-overlay');
+  const hb = document.getElementById('hamburger');
+  sb.classList.remove('open');
+  overlay.classList.remove('show');
+  hb.textContent = '☰';
 }
 
 // ——— SIDEBAR TOGGLE ———
