@@ -360,6 +360,7 @@ textarea{resize:vertical;min-height:65px}
     <button class="ni" id="menu-usuarios" onclick="goPage('usuarios')" style="display:none"><span class="ni-ic">👤</span>Usuários</button>
   </div>
   <button class="sb-expand" onclick="toggleSidebar()" title="Expandir menu">▶</button>
+  <button class="ni" onclick="sair()" style="margin:6px 9px;color:rgba(255,100,100,.8)"><span class="ni-ic">🚪</span>Sair</button>
   <div class="sb-ft">Ampare ONG © 2025</div>
 </nav>
 
@@ -1598,6 +1599,13 @@ window.addEventListener('beforeprint', ()=>{
     }
   });
 });
+
+function sair(){
+  if(!confirm('Deseja sair do sistema?')) return;
+  sessionStorage.removeItem('amp_auth');
+  sessionStorage.removeItem('amp_usr');
+  location.reload();
+}
 
 window.addEventListener('resize',()=>{
   const hb = document.getElementById('hamburger');
