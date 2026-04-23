@@ -713,7 +713,8 @@ async function doLogin(){
   const btn=document.querySelector('.login-btn');
   btn.textContent='Entrando...';btn.disabled=true;
   try {
-    const res = await supa.get('usuarios?usuario=eq.'+encodeURIComponent(usr)+'&senha=eq.'+encodeURIComponent(pwd));
+    const hashed = await hashSenha(pwd);
+    const res = await supa.get('usuarios?usuario=eq.'+encodeURIComponent(usr)+'&senha=eq.'+encodeURIComponent(hashed));
     if(res && res.length > 0){
       usuarioLogado = res[0];
       err.style.display='none';
@@ -1336,11 +1337,12 @@ async function salvarUsuario(){
   try {
     if(editUsrId){
       const dados = {nome, usuario, perfil, permissoes: perms};
-      if(senha) dados.senha = senha;
+      if(senha) dados.senha = await hashSenha(senha);
       await supa.patch('usuarios?id=eq.'+editUsrId, dados);
       toast('Usuário atualizado!');
     } else {
-      await supa.post('usuarios', {id: uid(), nome, usuario, senha, perfil, permissoes: perms});
+      const senhaHash = await hashSenha(senha);
+      await supa.post('usuarios', {id: uid(), nome, usuario, senha: senhaHash, perfil, permissoes: perms});
       toast('Usuário criado!');
     }
     closeMo('mo-usuario');
@@ -1621,6 +1623,15 @@ function sair(){
   sessionStorage.removeItem('amp_auth');
   sessionStorage.removeItem('amp_usr');
   location.reload();
+}
+
+// ——— HASH SHA-256 ———
+async function hashSenha(senha){
+  const encoder = new TextEncoder();
+  const data = encoder.encode(senha);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 window.addEventListener('resize',()=>{
