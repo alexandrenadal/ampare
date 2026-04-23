@@ -3,7 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ampare — Sistema de Gestão</title>
+<title>Ampare</title>
+<link id="favicon" rel="icon" type="image/jpeg" href="">
+<script>
+// Seta favicon assim que LB64 estiver disponível
+document.addEventListener('DOMContentLoaded', function(){
+  const favicon = document.getElementById('favicon');
+  if(favicon && typeof LB64 !== 'undefined'){
+    favicon.href = 'data:image/jpeg;base64,' + LB64;
+  }
+});
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <!--
