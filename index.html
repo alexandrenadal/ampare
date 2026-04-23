@@ -64,25 +64,27 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--gr);displ
 .sb.mini .sb-nm,.sb.mini .sb-sb,.sb.mini .nl,.sb.mini .ni span:not(.ni-ic),.sb.mini .sb-ft,.sb.mini .sb-toggle,.sb.mini .sb-logo div{display:none!important}
 .sb.mini .sb-logo{padding:10px 0;justify-content:center;gap:0}
 .sb.mini .sb-logo img{width:34px;height:34px}
-.sb.mini .ni{justify-content:center;padding:10px 0;width:56px;overflow:hidden;gap:0}
-.sb.mini .ni-ic{width:auto;font-size:20px;margin:0}
+.sb.mini .ni{justify-content:center;padding:8px 0;width:56px;overflow:hidden;gap:0;opacity:0;pointer-events:none}
+.sb.mini .ni-ic{width:auto;font-size:20px;margin:0;display:none!important}
 .sb-toggle{background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px;transition:all .17s;margin-left:auto;flex-shrink:0}
 .sb-toggle:hover{background:rgba(255,255,255,.15);color:#fff}
-.sb-expand{display:none;background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:18px;padding:8px 0;width:100%;text-align:center}
-.sb-expand:hover{color:#fff}
-.sb.mini .sb-expand{display:block}
+.sb-expand{display:none;background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;font-size:22px;padding:0;width:56px;height:100%;position:absolute;top:0;left:0;writing-mode:horizontal-tb}
+.sb-expand:hover{color:#fff;background:rgba(255,255,255,.08)}
+.sb.mini .sb-expand{display:flex;align-items:center;justify-content:center}
+.sb.mini{position:fixed;cursor:pointer}
 .sb-toggle{background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px;transition:all .17s;margin-left:auto;flex-shrink:0}
 .sb-toggle:hover{background:rgba(255,255,255,.15);color:#fff}
-.sb-expand{display:none;background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:18px;padding:8px 0;width:100%;text-align:center}
-.sb-expand:hover{color:#fff}
-.sb.mini .sb-expand{display:block}
+.sb-expand{display:none;background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;font-size:22px;padding:0;width:56px;height:100%;position:absolute;top:0;left:0;writing-mode:horizontal-tb}
+.sb-expand:hover{color:#fff;background:rgba(255,255,255,.08)}
+.sb.mini .sb-expand{display:flex;align-items:center;justify-content:center}
+.sb.mini{position:fixed;cursor:pointer}
 .sb{width:232px;min-height:100vh;background:var(--v);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:3px 0 18px rgba(0,0,0,.12);transition:width .25s ease}
 .sb.mini{width:56px!important;overflow:hidden}
 .sb.mini .sb-nm,.sb.mini .sb-sb,.sb.mini .nl,.sb.mini .ni span:not(.ni-ic),.sb.mini .sb-ft,.sb.mini .sb-toggle,.sb.mini .sb-logo div{display:none!important}
 .sb.mini .sb-logo{padding:12px 6px;justify-content:center}
 .sb.mini .sb-logo img{width:34px;height:34px}
 .sb.mini .ni{justify-content:center;padding:10px 0;width:56px}
-.sb.mini .ni-ic{width:auto;font-size:20px;margin:0}
+.sb.mini .ni-ic{width:auto;font-size:20px;margin:0;display:none!important}
 .main{margin-left:232px;flex:1;padding:26px 32px;min-height:100vh;transition:margin-left .25s ease}
 .main.mini{margin-left:56px}
 .main.mini{margin-left:56px}
@@ -283,6 +285,8 @@ textarea{resize:vertical;min-height:65px}
 .foto-av{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.3);flex-shrink:0}
 .foto-av-sm{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0}
 ::-webkit-scrollbar{width:5px}
+.sb-close{display:none;background:none;border:none;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer;padding:4px 8px;border-radius:6px;flex-shrink:0}
+.sb-close:hover{color:#fff;background:rgba(255,255,255,.15)}
 
 /* ——— RESPONSIVO MOBILE ——— */
 .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
@@ -304,6 +308,8 @@ textarea{resize:vertical;min-height:65px}
   .pt{font-size:22px}
   .md{width:100%;max-width:100%;border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:90vh}
   .mo{align-items:flex-end}
+  .sb-close{display:flex;align-items:center;justify-content:center}
+  .hamburger{align-items:center;justify-content:center}
 }
 ::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:3px}
 </style>
@@ -329,8 +335,9 @@ textarea{resize:vertical;min-height:65px}
 <nav class="sb">
   <div class="sb-logo" style="cursor:pointer" onclick="if(sbMini)toggleSidebar()">
     <img id="sb-img" src="" alt="Ampare">
-    <div><div class="sb-nm">Ampare</div><div class="sb-sb">Gestão de ONG</div></div>
+    <div style="flex:1"><div class="sb-nm">Ampare</div><div class="sb-sb">Gestão de ONG</div></div>
     <button class="sb-toggle" onclick="event.stopPropagation();toggleSidebar()" title="Minimizar menu">◀</button>
+    <button class="sb-close" onclick="fecharMenu()" title="Fechar menu">✕</button>
   </div>
   <div class="nav">
     <span class="nl">Visão Geral</span>
