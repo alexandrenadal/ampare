@@ -72,7 +72,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--gr);displ
 .sb-toggle:hover{background:rgba(255,255,255,.15);color:#fff}
 .sb{width:232px;min-height:100vh;background:var(--v);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:3px 0 18px rgba(0,0,0,.12);transition:width .25s ease}
 .sb.mini{width:56px}
-.sb.mini .sb-nm,.sb.mini .sb-sb,.sb.mini .nl,.sb.mini .ni span:not(.ni-ic),.sb.mini .sb-ft-txt{display:none!important}
+.sb.mini .sb-nm,.sb.mini .sb-sb,.sb.mini .nl,.sb.mini .ni span:not(.ni-ic),.sb.mini .sb-ft{display:none!important}
 .sb.mini .sb-logo{padding:12px 6px;justify-content:center}
 .sb.mini .sb-logo img{width:34px;height:34px}
 .sb.mini .ni{justify-content:center;padding:10px 6px}
@@ -281,15 +281,16 @@ textarea{resize:vertical;min-height:65px}
 /* ——— RESPONSIVO MOBILE ——— */
 .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
 .sb-overlay.show{display:block}
-.hamburger{display:none;position:fixed;top:12px;left:12px;z-index:101;background:var(--v);border:none;border-radius:8px;padding:8px 10px;cursor:pointer;color:#fff;font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.hamburger{display:none;background:none;border:none;color:rgba(255,255,255,.8);font-size:20px;cursor:pointer;padding:4px 6px;border-radius:6px;flex-shrink:0;line-height:1}
+.hamburger:hover{background:rgba(255,255,255,.15);color:#fff}
 @media(max-width:768px){
   .hamburger{display:flex;align-items:center;justify-content:center}
   .sb{transform:translateX(-100%);transition:transform .25s ease;z-index:100}
   .sb.open{transform:translateX(0)}
   .sb.mini{width:232px;transform:translateX(-100%)}
   .sb.mini.open{transform:translateX(0)}
-  .sb-toggle{display:none}
-  .main{margin-left:0!important;padding:16px;padding-top:56px}
+  .sb-toggle{display:none!important}
+  .main{margin-left:0!important;padding:20px 16px}
   .main.mini{margin-left:0}
   .cg4{grid-template-columns:1fr 1fr}
   .ch-grid{grid-template-columns:1fr}
@@ -303,8 +304,7 @@ textarea{resize:vertical;min-height:65px}
 </style>
 </head>
 <body>
-<!-- HAMBURGUER -->
-<button class="hamburger" id="hamburger" onclick="toggleMenu()">☰</button>
+<!-- OVERLAY MOBILE -->
 <div class="sb-overlay" id="sb-overlay" onclick="fecharMenu()"></div>
 
 <!-- LOGIN -->
@@ -322,6 +322,7 @@ textarea{resize:vertical;min-height:65px}
 </div>
 <nav class="sb">
   <div class="sb-logo">
+    <button class="hamburger" id="hamburger" onclick="toggleMenu()">☰</button>
     <img id="sb-img" src="" alt="Ampare">
     <div><div class="sb-nm">Ampare</div><div class="sb-sb">Gestão de ONG</div></div>
     <button class="sb-toggle" onclick="toggleSidebar()" title="Minimizar menu">◀</button>
