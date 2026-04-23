@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ampare — Sistema de Gestão</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!--
+=============================================================
+  GUIA DE CONFIGURAÇÃO DO SUPABASE
+=============================================================
+  1. Acesse https://supabase.com e crie uma conta gratuita
+  2. Crie um novo projeto (anote a URL e a anon key)
+  3. No painel do Supabase, vá em "SQL Editor" e execute:
+
+  -- Tabela de beneficiários
+  CREATE TABLE beneficiarios (
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    nreg TEXT,
+    nasc TEXT, sexo TEXT, tel TEXT, nat TEXT,
+    ocup TEXT, renda TEXT, rel TEXT, mae TEXT, pai TEXT,
+    dtcad TEXT, rg TEXT, cpf TEXT, esc TEXT, conj TEXT,
+    resid TEXT, "end" TEXT, num TEXT, comp TEXT, bairro TEXT,
+    cid TEXT, est TEXT, status TEXT DEFAULT 'Ativo',
+    cesta BOOLEAN, cestad TEXT,
+    ocup_c JSONB, bens JSONB,
+    "cSim" BOOLEAN, "cNome" TEXT, "cSexo" TEXT, "cNasc" TEXT, "cPar" TEXT, "cObs" TEXT,
+    "fSim" BOOLEAN, filhos JSONB,
+    "sSim" BOOLEAN, saudes JSONB,
+    "criadoEm" TEXT
+  );
+
+  -- Tabela de retiradas
+  CREATE TABLE retiradas (
+    id TEXT PRIMARY KEY,
+    "pessoaId" TEXT REFERENCES beneficiarios(id) ON DELETE CASCADE,
+    data TEXT,
+    hora TEXT,
+    obs TEXT,
+    metodo TEXT DEFAULT 'Manual'
+  );
+
+  -- Permitir acesso público (RLS desativado para simplicidade)
+  ALTER TABLE beneficiarios ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE retiradas ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY "allow_all_beneficiarios" ON beneficiarios FOR ALL USING (true) WITH CHECK (true);
+  CREATE POLICY "allow_all_retiradas" ON retiradas FOR ALL USING (true) WITH CHECK (true);
+
+  4. Depois, edite este arquivo e substitua:
+     - COLE_SUA_URL_AQUI  →  URL do seu projeto (ex: https://abc123.supabase.co)
+     - COLE_SUA_ANON_KEY_AQUI  →  anon key do projeto
+
+=============================================================
+-->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root{--v:#2D6A4F;--vc:#52B788;--vs:#D8F3DC;--te:#B7572A;--cr:#FDFAF5;--gr:#1B2124;--ci:#6B7280;--bc:#FFFFFF;--sh:0 4px 24px rgba(45,106,79,.10);--r:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--cr);color:var(--gr);display:flex;min-height:100vh}
+
+.sb.mini{width:56px}
+.sb.mini .sb-nm,.sb.mini .sb-sb,.sb.mini .nl,.sb.mini .ni span:not(.ni-ic),.sb.mini .sb-ft{display:none}
+.sb.mini .sb-logo{padding:12px 6px;justify-content:center}
+.sb.mini .sb-logo img{width:34px;height:34px}
+.sb.mini .ni{justify-content:center;padding:10px 0}
+.sb.mini .ni-ic{width:auto;font-size:18px}
+.sb-toggle{background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px;transition:all .17s;margin-left:auto}
+.sb-toggle:hover{background:rgba(255,255,255,.15);color:#fff}
+.sb-toggle{background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:4px 8px;border-radius:6px;transition:all .17s;margin-left:auto}
+.sb-toggle:hover{background:rgba(255,255,255,.15);color:#fff}
+.sb{width:232px;min-height:100vh;background:var(--v);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;box-shadow:3px 0 18px rgba(0,0,0,.12);transition:width .25s ease}
+.sb.mini{width:56px}
+.sb.mini .sb-nm,.sb.mini .sb-sb,.sb.mini .nl,.sb.mini .ni span:not(.ni-ic),.sb.mini .sb-ft-txt{display:none!important}
+.sb.mini .sb-logo{padding:12px 6px;justify-content:center}
+.sb.mini .sb-logo img{width:34px;height:34px}
+.sb.mini .ni{justify-content:center;padding:10px 6px}
+.sb.mini .ni-ic{width:auto;font-size:18px}
+.main{margin-left:232px;flex:1;padding:26px 32px;min-height:100vh;transition:margin-left .25s ease}
+.main.mini{margin-left:56px}
+.main.mini{margin-left:56px}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:10px}
+.sb-logo img{width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;background:#fff}
+.sb-nm{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:#fff;line-height:1.1}
+.sb-sb{font-size:9px;color:rgba(255,255,255,.46);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.nav{padding:12px 9px;flex:1;display:flex;flex-direction:column;gap:2px}
+.nl{font-size:9.5px;color:rgba(255,255,255,.36);letter-spacing:2px;text-transform:uppercase;padding:7px 9px 2px;margin-top:4px}
+.ni{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:9px;cursor:pointer;transition:all .17s;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
+.ni:hover{background:rgba(255,255,255,.09);color:#fff}
+.ni.active{background:var(--vc);color:#fff;box-shadow:0 3px 10px rgba(82,183,136,.32)}
+.ni-ic{font-size:14px;width:18px;text-align:center}
+.sb-ft{padding:11px 16px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.26);text-align:center}
+.main{margin-left:232px;flex:1;padding:26px 32px;min-height:100vh}
+.pg{display:none}.pg.active{display:block}
+.ph{margin-bottom:24px}
+.pt{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:var(--gr);margin-bottom:2px}
+.ps{color:var(--ci);font-size:13px}
+.cg4{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:24px}
+.sc{background:#fff;border-radius:var(--r);padding:20px;box-shadow:var(--sh);border:1.5px solid rgba(45,106,79,.07)}
+.sc-ic{font-size:23px;margin-bottom:8px}
+.sc-v{font-family:'Playfair Display',serif;font-size:31px;font-weight:700;line-height:1}
+.sc-l{font-size:12px;color:var(--ci);margin-top:4px}
+.ch-grid{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:18px}
+.ch-card{background:#fff;border-radius:var(--r);padding:22px;box-shadow:var(--sh);border:1.5px solid rgba(45,106,79,.07)}
+.ch-t{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;margin-bottom:2px}
+.ch-s{font-size:11px;color:var(--ci);margin-bottom:15px}
+.tc{background:#fff;border-radius:var(--r);box-shadow:var(--sh);border:1.5px solid rgba(45,106,79,.07);overflow:hidden;margin-bottom:18px}
+.th{padding:15px 21px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #F1F5F9}
+.tt{font-family:'Playfair Display',serif;font-size:15px;font-weight:700}
+table{width:100%;border-collapse:collapse}
+th{background:var(--cr);padding:9px 21px;text-align:left;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ci)}
+td{padding:11px 21px;font-size:13px;border-bottom:1px solid #F8FAFC;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFDF8}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.b-ok{background:var(--vs);color:var(--v)}
+.b-off{background:#FFF7ED;color:#C2410C}
+.b-blue{background:#EFF6FF;color:#1D4ED8}
+.dot{width:5px;height:5px;border-radius:50%;display:inline-block}
+.dv{background:var(--vc)}.dt{background:#FB923C}.db{background:#3B82F6}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .17s;font-family:'DM Sans',sans-serif}
+.btn-p{background:var(--v);color:#fff;box-shadow:0 3px 10px rgba(45,106,79,.20)}
+.btn-p:hover{background:#235C41;transform:translateY(-1px)}
+.btn-o{background:transparent;color:var(--v);border:2px solid var(--v)}
+.btn-o:hover{background:var(--vs)}
+.btn-t{background:var(--te);color:#fff}
+.btn-t:hover{background:#9E4822}
+.btn-sm{padding:6px 12px;font-size:12px}
+.fc{background:#fff;border-radius:var(--r);padding:24px;box-shadow:var(--sh);border:1.5px solid rgba(45,106,79,.07);margin-bottom:18px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px}
+.fgr{display:flex;flex-direction:column;gap:5px}
+.fgr.full{grid-column:1/-1}
+label{font-size:12px;font-weight:700;color:var(--gr);letter-spacing:.2px}
+input,select,textarea{padding:9px 12px;border:2px solid #E5E7EB;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--gr);background:#fff;transition:border .17s;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--vc);box-shadow:0 0 0 3px rgba(82,183,136,.10)}
+textarea{resize:vertical;min-height:65px}
+.fst{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--v);margin:20px 0 13px;padding-bottom:8px;border-bottom:2px solid var(--vs)}
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--v);background:var(--vs);flex-shrink:0}
+.pc{display:flex;align-items:center;gap:9px}
+.pn{font-weight:600;font-size:13px}
+.pid{font-size:11px;color:var(--ci)}
+.ckg{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:4px}
+.cki{display:flex;align-items:center;gap:7px;padding:8px 11px;border:2px solid #E5E7EB;border-radius:8px;cursor:pointer;font-size:13px;user-select:none;transition:all .14s}
+.cki:hover{border-color:var(--vc);background:var(--vs)}
+.cki input{accent-color:var(--v);width:14px;height:14px;flex-shrink:0}
+.cki.chk{border-color:var(--v);background:var(--vs);font-weight:600;color:var(--v)}
+.yn{display:flex;gap:9px;margin-top:4px}
+.yb{flex:1;padding:9px;border-radius:8px;border:2px solid #E5E7EB;background:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--ci);transition:all .14s}
+.yb.yes.s{background:var(--v);color:#fff;border-color:var(--v)}
+.yb.no.s{background:#DC2626;color:#fff;border-color:#DC2626}
+.sub-item{border:2px solid #E5E7EB;border-radius:11px;padding:14px;margin-top:10px;position:relative}
+.sub-rm{position:absolute;top:9px;right:11px;background:none;border:none;color:#DC2626;font-size:16px;cursor:pointer}
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:200;align-items:center;justify-content:center}
+.mo.show{display:flex}
+.md{background:#fff;border-radius:18px;width:96%;max-width:700px;box-shadow:0 20px 60px rgba(0,0,0,.18);max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+.md-head{padding:16px 24px 12px;border-bottom:1px solid #F1F5F9;flex-shrink:0;position:relative}
+.md-t{font-family:'Playfair Display',serif;font-size:18px;font-weight:700}
+.md-cl{position:absolute;top:13px;right:16px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--ci)}
+.md-body{padding:20px 24px;overflow-y:auto;flex:1}
+.md-foot{padding:13px 24px;border-top:1px solid #F1F5F9;display:flex;justify-content:flex-end;gap:9px;flex-shrink:0}
+.sb-row{display:flex;gap:10px;align-items:center;margin-bottom:15px}
+.si-wrap{position:relative;flex:1}
+.si-ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--ci)}
+.si{padding-left:34px!important}
+/* LOGIN */
+.login-screen{display:flex;position:fixed;inset:0;background:var(--v);z-index:9999;align-items:center;justify-content:center}
+.login-box{background:#fff;border-radius:20px;padding:40px 44px;width:100%;max-width:400px;box-shadow:0 24px 64px rgba(0,0,0,.25);text-align:center}
+.login-logo{width:72px;height:72px;border-radius:16px;object-fit:cover;margin:0 auto 14px;display:block}
+.login-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;color:var(--gr);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--ci);margin-bottom:28px}
+.login-err{background:#FFF7ED;border:1.5px solid #FB923C;color:#C2410C;border-radius:8px;padding:9px 13px;font-size:13px;margin-bottom:14px;display:none}
+.login-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;text-align:left}
+.login-field label{font-size:12px;font-weight:700;color:var(--gr)}
+.login-field input{padding:11px 13px;border:2px solid #E5E7EB;border-radius:9px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border .17s}
+.login-field input:focus{border-color:var(--vc)}
+.login-btn{width:100%;padding:12px;background:var(--v);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:6px;transition:background .17s}
+.login-btn:hover{background:#235C41}
+.login-hint{font-size:11px;color:var(--ci);margin-top:14px}
+/* CARTEIRINHA - tela */
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:24px}
+.card-wrap{display:flex;flex-direction:column;align-items:flex-start;gap:9px}
+/* carteirinha visual na tela */
+.card-id{width:340px;background:linear-gradient(135deg,#1B4332 0%,#2D6A4F 55%,#40916C 100%);border-radius:16px;padding:20px 22px;color:#fff;position:relative;overflow:hidden;box-shadow:0 10px 34px rgba(45,106,79,.30)}
+.card-id::before{content:'';position:absolute;top:-28px;right:-28px;width:120px;height:120px;background:rgba(255,255,255,.06);border-radius:50%}
+.card-id::after{content:'';position:absolute;bottom:-22px;left:-22px;width:90px;height:90px;background:rgba(255,255,255,.04);border-radius:50%}
+.ci-lr{display:flex;align-items:center;gap:9px;margin-bottom:3px}
+.ci-logo{width:34px;height:34px;border-radius:7px;object-fit:cover;flex-shrink:0;background:rgba(255,255,255,.9)}
+.ci-nm{font-family:'Playfair Display',serif;font-size:19px;font-weight:900;text-transform:uppercase}
+.ci-sb{font-size:7px;letter-spacing:1px;text-transform:uppercase;opacity:.5;margin-top:1px;white-space:nowrap}
+.ci-dv{height:1px;background:rgba(255,255,255,.15);margin:13px 0}
+.ci-pr{display:flex;gap:12px;align-items:center;margin-bottom:13px}
+.ci-av{width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;border:2px solid rgba(255,255,255,.3);flex-shrink:0;overflow:hidden}
+.ci-pn{font-size:15px;font-weight:700;font-family:'Playfair Display',serif;line-height:1.2}
+.ci-pd{font-size:10.5px;opacity:.62;margin-top:2px}
+.ci-ir{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
+.ci-il{opacity:.52}.ci-iv{font-weight:700}
+.ci-bot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:13px}
+.ci-id{font-size:8.5px;opacity:.42;letter-spacing:.7px}
+.ci-qr{background:#fff;border-radius:9px;padding:6px;width:72px;height:72px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ci-acts{display:flex;gap:7px}
+/* CARTEIRINHA IMPRESSÃO - layout completo para papel */
+.print-card{display:none}
+@media print{
+  @page{margin:10mm}
+  body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .login-screen,.sb,.main .ph,.main .sb-row,.fc,.rf,.ci-acts,.qr-area,.main .btn{display:none!important}
+  .main{margin-left:0!important;padding:0!important}
+  .pg{display:none!important}
+  #page-carteirinhas{display:block!important}
+  #page-carteirinhas .ph,#page-carteirinhas .sb-row{display:none!important}
+  .cg{display:flex!important;flex-wrap:wrap;gap:10mm;padding:5mm}
+  /* esconde card digital, mostra card de impressão */
+  .card-id{display:none!important}
+  .ci-acts{display:none!important}
+  .print-card{display:flex!important;flex-direction:column;width:85.6mm;height:68mm;border:0.5mm solid #1B4332;border-radius:4mm;overflow:hidden;break-inside:avoid;page-break-inside:avoid;font-family:'DM Sans',sans-serif}
+  .pc-header{background:#1B4332;padding:4mm 5mm 3mm;display:flex;align-items:center;gap:3mm}
+  .pc-logo{width:14mm;height:14mm;border-radius:3mm;object-fit:cover;background:#fff;flex-shrink:0}
+  .pc-org{color:#fff}
+  .pc-org-nm{font-family:'Playfair Display',serif;font-size:16pt;font-weight:900;line-height:1;text-transform:uppercase}
+  .pc-org-sb{font-size:4.5pt;letter-spacing:0.5px;text-transform:uppercase;opacity:.7;margin-top:1px;white-space:nowrap}
+  .pc-body{padding:2mm 4mm 2mm;flex:1;display:flex;flex-direction:column;justify-content:space-between}
+  .pc-top-row{display:flex;align-items:center;gap:2.5mm}
+  .pc-info{flex:1}
+  .pc-divider{height:0.3mm;background:#E5E7EB;margin:2mm 0}
+  .pc-avatar-row{display:flex;align-items:center;gap:2mm;margin-bottom:1.5mm;padding-bottom:1.5mm;border-bottom:0.3mm solid #E5E7EB}
+  .pc-av{width:16mm;height:16mm;border-radius:2mm;background:#2D6A4F;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12pt;font-weight:700;flex-shrink:0;overflow:hidden}
+  .pc-name{font-size:9.5pt;font-weight:700;color:#1B2124;font-family:'Playfair Display',serif;line-height:1.2}
+  .pc-cpf{font-size:7.5pt;color:#6B7280;margin-top:1mm}
+  .pc-city{font-size:7.5pt;color:#6B7280}
+  .pc-fields{margin-bottom:0}
+  .pc-row{display:flex;justify-content:space-between;align-items:center;padding:0.6mm 0;border-bottom:0.2mm solid #F1F5F9}
+  .pc-row:last-child{border-bottom:none}
+  .pc-label{font-size:7pt;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .pc-val{font-size:9pt;font-weight:700;color:#1B2124}
+  .pc-val.nreg{font-size:11pt;color:#2D6A4F}
+  .pc-bottom{display:none!important}
+  .pc-ids{font-size:5.5pt;color:#9CA3AF;line-height:1.4}
+  .pc-qr-box{width:18mm;height:18mm;display:flex!important;align-items:center;justify-content:center;border:0.3mm solid #ccc;border-radius:2mm;padding:0.5mm;overflow:hidden;flex-shrink:0}
+  .pc-status-badge{display:inline-block;padding:0.5mm 2mm;border-radius:2mm;font-size:7pt;font-weight:700}
+  .pc-status-ativo{background:#D8F3DC;color:#2D6A4F;border:0.3mm solid #52B788}
+  .pc-status-inativo{background:#FFF7ED;color:#C2410C;border:0.3mm solid #FB923C}
+  .pc-qr-box canvas,.pc-qr-box img,.pc-qr-box img.qr-img{display:block!important;width:17mm!important;height:17mm!important;max-width:17mm!important;max-height:17mm!important}
+  .pc-qr-box div{display:block!important}
+  .pc-qr-box table{display:table!important}
+  .pc-qr-box td{display:table-cell!important}
+}
+.qr-area{background:var(--gr);border-radius:15px;padding:34px;text-align:center;color:#fff;position:relative;overflow:hidden;margin-bottom:18px}
+.qr-area::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(82,183,136,.17),transparent 67%);pointer-events:none}
+.qr-frame{width:164px;height:164px;border:2.5px solid var(--vc);border-radius:15px;margin:0 auto 17px;position:relative;background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:center}
+.qfc{position:absolute;width:19px;height:19px;border-color:var(--vc);border-style:solid}
+.qfc.tl{top:-3px;left:-3px;border-width:4px 0 0 4px;border-radius:4px 0 0 0}
+.qfc.tr{top:-3px;right:-3px;border-width:4px 4px 0 0;border-radius:0 4px 0 0}
+.qfc.bl{bottom:-3px;left:-3px;border-width:0 0 4px 4px;border-radius:0 0 0 4px}
+.qfc.br{bottom:-3px;right:-3px;border-width:0 4px 4px 0;border-radius:0 0 4px 0}
+.scanline{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--vc),transparent);animation:sc 2s linear infinite}
+@keyframes sc{0%{top:10%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:90%;opacity:0}}
+.qi-wrap{display:flex;gap:9px;align-items:center;justify-content:center;margin-top:8px}
+.qi{background:rgba(255,255,255,.1)!important;border:2px solid rgba(255,255,255,.2)!important;color:#fff!important;width:230px;text-align:center;font-size:14px!important;letter-spacing:1.5px}
+.qi::placeholder{color:rgba(255,255,255,.36)!important}
+.qi:focus{border-color:var(--vc)!important}
+.sr{border-radius:var(--r);padding:16px 20px;display:flex;align-items:center;gap:15px;margin-bottom:15px}
+.sr-ok{background:var(--vs);border:2px solid var(--vc)}
+.sr-err{background:#FFF7ED;border:2px solid #FB923C}
+.sr-ic{font-size:32px}
+.sr-nm{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--v)}
+.sr-inf{font-size:12px;color:var(--ci)}
+.rf{background:#fff;border-radius:var(--r);padding:18px;box-shadow:var(--sh);border:1.5px solid rgba(45,106,79,.07);margin-bottom:16px}
+.rf-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--v);color:#fff;padding:10px 17px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 6px 18px rgba(0,0,0,.17);z-index:9999;display:flex;align-items:center;gap:8px;transform:translateY(60px);opacity:0;transition:all .27s}
+.toast.show{transform:translateY(0);opacity:1}
+.emp{text-align:center;padding:34px 20px;color:var(--ci)}
+.emp-ic{font-size:40px;margin-bottom:8px}
+.fa{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;padding-top:15px;border-top:1px solid #F1F5F9}
+/* print handled above */
+.foto-av{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.3);flex-shrink:0}
+.foto-av-sm{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:3px}
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <img class="login-logo" id="login-logo" src="" alt="Ampare">
+    <div class="login-title">Ampare</div>
+    <div class="login-sub">Sistema de Gestão — Acesso Restrito</div>
+    <div class="login-err" id="login-err">Usuário ou senha incorretos.</div>
+    <div class="login-field"><label>Usuário</label><input type="text" id="login-usr" placeholder="Digite seu usuário" autocomplete="username"></div>
+    <div class="login-field"><label>Senha</label><input type="password" id="login-pwd" placeholder="Digite sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-hint">Acesso exclusivo para colaboradores da ONG Ampare</div>
+  </div>
+</div>
+<nav class="sb">
+  <div class="sb-logo">
+    <img id="sb-img" src="" alt="Ampare">
+    <div><div class="sb-nm">Ampare</div><div class="sb-sb">Gestão de ONG</div></div>
+    <button class="sb-toggle" onclick="toggleSidebar()" title="Minimizar menu">◀</button>
+  </div>
+  <div class="nav">
+    <span class="nl">Visão Geral</span>
+    <button class="ni active" onclick="goPage('dash')"><span class="ni-ic">📊</span>Dashboard</button>
+    <span class="nl">Pessoas</span>
+    <button class="ni" onclick="goPage('pessoas')"><span class="ni-ic">👥</span>Beneficiários</button>
+    <button class="ni" onclick="openCad()"><span class="ni-ic">✏️</span>Novo Cadastro</button>
+    <span class="nl">Retiradas</span>
+    <button class="ni" onclick="goPage('retiradas')"><span class="ni-ic">🛒</span>Registrar Retirada</button>
+    <button class="ni" onclick="goPage('coletor')"><span class="ni-ic">📱</span>Coletor QR</button>
+    <span class="nl">Relatórios</span>
+    <button class="ni" onclick="goPage('relatorio')"><span class="ni-ic">📋</span>Relatórios</button>
+    <span class="nl">Documentos</span>
+    <button class="ni" onclick="goPage('carteirinhas')"><span class="ni-ic">🪪</span>Carteirinhas</button>
+    <span class="nl" id="menu-admin" style="display:none">Administração</span>
+    <button class="ni" id="menu-usuarios" onclick="goPage('usuarios')" style="display:none"><span class="ni-ic">👤</span>Usuários</button>
+  </div>
+  <div class="sb-ft">Ampare ONG © 2025</div>
+</nav>
+
+<main class="main">
+<!-- DASHBOARD -->
+<div class="pg active" id="page-dash">
+  <div class="ph"><div class="pt">Dashboard</div><div class="ps" id="dash-dt"></div></div>
+  <div class="cg4">
+    <div class="sc"><div class="sc-ic">👥</div><div class="sc-v" id="st-p">0</div><div class="sc-l">Beneficiários Cadastrados</div></div>
+    <div class="sc"><div class="sc-ic">✅</div><div class="sc-v" id="st-a">0</div><div class="sc-l">Beneficiários Ativos</div></div>
+    <div class="sc"><div class="sc-ic">🛒</div><div class="sc-v" id="st-r">0</div><div class="sc-l">Retiradas este mês</div></div>
+    <div class="sc"><div class="sc-ic">📅</div><div class="sc-v" id="st-h">0</div><div class="sc-l">Retiradas hoje</div></div>
+  </div>
+  <div class="ch-grid">
+    <div class="ch-card"><div class="ch-t">Retiradas por Mês</div><div class="ch-s">Histórico dos últimos 6 meses</div><canvas id="chartRet" height="95"></canvas></div>
+    <div class="ch-card"><div class="ch-t">Status dos Beneficiários</div><div class="ch-s">Ativos × Inativos</div><canvas id="chartSt" height="95"></canvas></div>
+  </div>
+  <div class="tc">
+    <div class="th"><span class="tt">Últimas Retiradas</span><button class="btn btn-o btn-sm" onclick="goPage('retiradas')">Ver todas →</button></div>
+    <table><thead><tr><th>Beneficiário</th><th>Nº Registro</th><th>Data / Hora</th><th>Método</th></tr></thead><tbody id="dash-ret"></tbody></table>
+  </div>
+</div>
+
+<!-- PESSOAS -->
+<div class="pg" id="page-pessoas">
+  <div class="ph"><div class="pt">Beneficiários</div><div class="ps">Todos os cadastrados na ONG Ampare</div></div>
+  <div class="sb-row">
+    <div class="si-wrap"><span class="si-ic">🔍</span><input type="text" class="si" placeholder="Buscar por nome, CPF, RG ou Nº Registro..." oninput="filtP(this.value)"></div>
+    <button class="btn btn-p" onclick="openCad()">➕ Novo Cadastro</button>
+  </div>
+  <div class="tc">
+    <table><thead><tr><th>Beneficiário</th><th>Nº Registro</th><th>CPF / RG</th><th>Telefone</th><th>Sit. Conjugal</th><th>Última Retirada</th><th>Status</th><th>Ações</th></tr></thead><tbody id="tb-p"></tbody></table>
+  </div>
+</div>
+
+<!-- RETIRADAS -->
+<div class="pg" id="page-retiradas">
+  <div class="ph"><div class="pt">Registrar Retirada</div><div class="ps">Registre a retirada de cesta básica manualmente</div></div>
+  <div class="fc">
+    <div class="fst">🛒 Nova Retirada</div>
+    <div class="fg3">
+      <div class="fgr"><label>Beneficiário *</label><select id="ret-p"><option value="">Selecionar...</option></select></div>
+      <div class="fgr"><label>Data</label><input type="date" id="ret-d"></div>
+      <div class="fgr"><label>Hora</label><input type="time" id="ret-h"></div>
+    </div>
+    <div class="fgr" style="margin-top:12px"><label>Observação</label><input type="text" id="ret-obs" placeholder="Opcional..."></div>
+    <div class="fa"><button class="btn btn-p" onclick="salvarRet()">✅ Registrar Retirada</button></div>
+  </div>
+  <div class="tc">
+    <div class="th"><span class="tt">Histórico de Retiradas</span><span id="ret-cnt" style="font-size:12px;color:var(--ci)"></span></div>
+    <table><thead><tr><th>Beneficiário</th><th>Nº Registro</th><th>Data / Hora</th><th>Método</th><th>Obs.</th></tr></thead><tbody id="tb-ret"></tbody></table>
+  </div>
+</div>
+
+<!-- COLETOR -->
+<div class="pg" id="page-coletor">
+  <div class="ph"><div class="pt">Coletor QR Code</div><div class="ps">Escaneie a carteirinha para registrar retirada automaticamente</div></div>
+  <div id="sr-area"></div>
+  <div class="qr-area">
+    <div class="qr-frame" id="qr-frame-wrap">
+      <div class="qfc tl"></div><div class="qfc tr"></div><div class="qfc bl"></div><div class="qfc br"></div>
+      <div class="scanline" id="scanline-el"></div>
+      <video id="qr-video" style="display:none;width:148px;height:148px;object-fit:cover;border-radius:10px"></video>
+      <canvas id="qr-canvas" style="display:none"></canvas>
+      <span id="qr-cam-icon" style="font-size:50px;opacity:.30">📷</span>
+    </div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:5px" id="qr-status-txt">Toque em Iniciar Câmera para escanear</div>
+    <div style="font-size:12px;opacity:.52;margin-bottom:14px">ou digite o Nº de Registro manualmente abaixo</div>
+    <button class="btn btn-p" id="btn-cam" onclick="toggleCam()" style="margin-bottom:14px">📷 Iniciar Câmera</button>
+    <div class="qi-wrap">
+      <input class="qi" type="text" id="qr-in" placeholder="Nº de Registro..." onkeydown="if(event.key==='Enter')procQR()">
+      <button class="btn btn-p" onclick="procQR()">✅ Registrar</button>
+    </div>
+  </div>
+  <div class="tc">
+    <div class="th"><span class="tt">Retiradas de Hoje</span></div>
+    <table><thead><tr><th>Beneficiário</th><th>Nº Registro</th><th>Hora</th><th>Método</th></tr></thead><tbody id="tb-hoje"></tbody></table>
+  </div>
+</div>
+
+<!-- RELATÓRIOS -->
+<div class="pg" id="page-relatorio">
+  <div class="ph"><div class="pt">Relatórios</div><div class="ps">Gere relatórios por dia, período ou beneficiário</div></div>
+  <div class="rf">
+    <div style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;margin-bottom:13px">🔍 Filtros</div>
+    <div class="rf-row">
+      <div class="fgr" style="min-width:160px"><label>Tipo de Relatório</label>
+        <select id="rel-tipo" onchange="atuFiltros()">
+          <option value="dia">Por Dia</option>
+          <option value="periodo">Por Período</option>
+          <option value="pessoa">Por Beneficiário</option>
+        </select>
+      </div>
+      <div class="fgr" id="rf-dia"><label>Data</label><input type="date" id="rel-data"></div>
+      <div class="fgr" id="rf-de" style="display:none"><label>De</label><input type="date" id="rel-de"></div>
+      <div class="fgr" id="rf-ate" style="display:none"><label>Até</label><input type="date" id="rel-ate"></div>
+      <div class="fgr" id="rf-pes" style="display:none;min-width:200px"><label>Beneficiário</label><select id="rel-pes"><option value="">Todos</option></select></div>
+      <button class="btn btn-p" onclick="gerarRel()" style="margin-top:17px">📊 Gerar</button>
+      <button class="btn btn-o" onclick="printRel()" style="margin-top:17px">🖨️ Imprimir</button>
+    </div>
+  </div>
+  <div id="rel-res"><div class="emp"><div class="emp-ic">📋</div><div>Selecione os filtros e clique em Gerar</div></div></div>
+</div>
+
+<!-- CARTEIRINHAS -->
+<div class="pg" id="page-carteirinhas">
+  <div class="ph"><div class="pt">Carteirinhas</div><div class="ps">Imprima as carteirinhas com QR Code</div></div>
+  <div class="sb-row">
+    <div class="si-wrap"><span class="si-ic">🔍</span><input type="text" class="si" placeholder="Buscar beneficiário..." oninput="filtCart(this.value)"></div>
+    <button class="btn btn-t" onclick="window.print()">🖨️ Imprimir Todas</button>
+  </div>
+  <div class="cg" id="cg-cart"></div>
+</div>
+<!-- USUÁRIOS -->
+<div class="pg" id="page-usuarios">
+  <div class="ph"><div class="pt">Usuários do Sistema</div><div class="ps">Gerencie os acessos ao sistema Ampare</div></div>
+  <div class="sb-row">
+    <div></div>
+    <button class="btn btn-p" onclick="openNovoUsuario()">➕ Novo Usuário</button>
+  </div>
+  <div class="tc">
+    <table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Ações</th></tr></thead><tbody id="tb-usuarios"></tbody></table>
+  </div>
+</div>
+
+<!-- MODAL USUÁRIO -->
+<div class="mo" id="mo-usuario">
+  <div class="md" style="max-width:420px">
+    <div class="md-head"><div class="md-t" id="mo-usr-tit">➕ Novo Usuário</div><button class="md-cl" onclick="closeMo('mo-usuario')">✕</button></div>
+    <div class="md-body">
+      <div class="fg" style="grid-template-columns:1fr">
+        <div class="fgr"><label>Nome completo</label><input id="u-nome" placeholder="Nome do usuário"></div>
+        <div class="fgr"><label>Login *</label><input id="u-login" placeholder="Nome de acesso (sem espaço)"></div>
+        <div class="fgr"><label>Senha *</label><input type="password" id="u-senha" placeholder="Senha de acesso"></div>
+        <div class="fgr"><label>Perfil</label>
+          <select id="u-perfil" onchange="togglePermissoes(this.value)">
+            <option value="operador">Operador</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div id="permissoes-wrap" style="border:2px solid #E5E7EB;border-radius:8px;padding:12px;margin-top:4px">
+          <div style="font-size:12px;font-weight:700;color:var(--gr);margin-bottom:8px">Permissões do Operador</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500"><input type="checkbox" id="perm-dashboard" checked style="accent-color:var(--v);width:14px;height:14px"> Dashboard</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500"><input type="checkbox" id="perm-beneficiarios" checked style="accent-color:var(--v);width:14px;height:14px"> Beneficiários</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500"><input type="checkbox" id="perm-retiradas" checked style="accent-color:var(--v);width:14px;height:14px"> Retiradas</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500"><input type="checkbox" id="perm-coletor" checked style="accent-color:var(--v);width:14px;height:14px"> Coletor QR</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500"><input type="checkbox" id="perm-relatorio" checked style="accent-color:var(--v);width:14px;height:14px"> Relatórios</label>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:500"><input type="checkbox" id="perm-carteirinhas" checked style="accent-color:var(--v);width:14px;height:14px"> Carteirinhas</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="md-foot">
+      <button class="btn btn-o" onclick="closeMo('mo-usuario')">Cancelar</button>
+      <button class="btn btn-p" onclick="salvarUsuario()">✅ Salvar</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL CADASTRO -->
+<div class="mo" id="mo-cad">
+  <div class="md">
+    <div class="md-head"><div class="md-t" id="md-tit">✏️ Novo Cadastro</div><button class="md-cl" onclick="closeMo('mo-cad')">✕</button></div>
+    <div class="md-body">
+      <div class="fst">👤 Dados Pessoais</div>
+      <div class="fg">
+        <div class="fgr full"><label>Nome Completo *</label><input id="c-nome" placeholder="Nome completo"></div>
+        <div class="fgr full">
+          <label>Foto do Beneficiário <small style="color:var(--ci);font-weight:400">(opcional)</small></label>
+          <div style="display:flex;align-items:center;gap:14px;margin-top:4px">
+            <div id="foto-preview" style="width:72px;height:72px;border-radius:50%;background:var(--vs);display:flex;align-items:center;justify-content:center;font-size:28px;border:2px solid var(--vc);overflow:hidden;flex-shrink:0">👤</div>
+            <div style="flex:1">
+              <input type="file" id="c-foto-file" accept="image/*" style="display:none" onchange="onFotoChange(this)">
+              <button type="button" class="btn btn-o btn-sm" onclick="document.getElementById('c-foto-file').click()">📷 Selecionar Foto</button>
+              <button type="button" class="btn btn-sm" id="btn-rm-foto" onclick="removerFoto()" style="background:#FFF7ED;color:#C2410C;border:1.5px solid #FDBA74;display:none;margin-left:6px">✕ Remover</button>
+              <div style="font-size:11px;color:var(--ci);margin-top:5px">A foto será salva e aparecerá na carteirinha e na ficha</div>
+            </div>
+          </div>
+        </div>
+        <div class="fgr"><label>Data de Nascimento</label><input type="date" id="c-nasc"></div>
+        <div class="fgr"><label>Sexo</label><select id="c-sexo"><option value="">Selecione</option><option>Masculino</option><option>Feminino</option><option>Outro</option></select></div>
+        <div class="fgr"><label>Telefone</label><input id="c-tel" placeholder="(00) 00000-0000" oninput="mTel(this)"></div>
+        <div class="fgr"><label>Naturalidade</label><input id="c-nat" placeholder="Cidade natal"></div>
+        <div class="fgr"><label>Ocupação</label><input id="c-ocup" placeholder="Ex: Doméstica"></div>
+        <div class="fgr"><label>Renda Familiar (R$)</label><input type="number" id="c-renda" placeholder="0,00" min="0" step="0.01"></div>
+        <div class="fgr"><label>Religião</label><input id="c-rel" placeholder="Ex: Católica"></div>
+        <div class="fgr"><label>Nome da Mãe</label><input id="c-mae" placeholder="Nome completo"></div>
+        <div class="fgr"><label>Nome do Pai</label><input id="c-pai" placeholder="Nome completo"></div>
+        <div class="fgr"><label>Data do Cadastro</label><input type="date" id="c-dtcad"></div>
+        <div class="fgr"><label>Nº de Registro * <small style="color:var(--ci);font-weight:400">(ficha cadastral)</small></label><input id="c-nreg" placeholder="Número da ficha"></div>
+        <div class="fgr"><label>RG</label><input id="c-rg" placeholder="00.000.000-0"></div>
+        <div class="fgr"><label>CPF</label><input id="c-cpf" placeholder="000.000.000-00" oninput="mCpf(this)"></div>
+        <div class="fgr"><label>Escolaridade</label>
+          <select id="c-esc"><option value="">Selecione</option><option>Ensino Fundamental Incompleto</option><option>Ensino Fundamental Completo</option><option>Ensino Médio Incompleto</option><option>Ensino Médio Completo</option><option>Superior Incompleto</option><option>Superior Completo</option></select>
+        </div>
+      </div>
+
+      <div class="fst">🏠 Endereço</div>
+      <div class="fg">
+        <div class="fgr"><label>Endereço</label><input id="c-end" placeholder="Rua, Avenida..."></div>
+        <div class="fgr"><label>Número</label><input id="c-num" placeholder="Nº"></div>
+        <div class="fgr"><label>Complemento</label><input id="c-comp" placeholder="Apto, Casa..."></div>
+        <div class="fgr"><label>Bairro</label><input id="c-bairro" placeholder="Bairro"></div>
+        <div class="fgr"><label>Cidade</label><input id="c-cid" placeholder="Cidade"></div>
+        <div class="fgr"><label>Estado</label>
+          <select id="c-est"><option>Paraná</option><option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option><option>MG</option><option>PA</option><option>PB</option><option>PR</option><option>PE</option><option>PI</option><option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option><option>SP</option><option>SE</option><option>TO</option></select>
+        </div>
+      </div>
+
+      <div class="fst">👨‍👩‍👧 Situação Familiar e Social</div>
+      <div class="fg">
+        <div class="fgr"><label>Situação Conjugal</label>
+          <select id="c-conj"><option value="">Selecione</option><option>Solteiro</option><option>Casado</option><option>União estável</option><option>Separado</option><option>Divorciado</option><option>Viúvo</option></select>
+        </div>
+        <div class="fgr"><label>Condição Residencial</label>
+          <select id="c-resid"><option value="">Selecione</option><option>Própria</option><option>Alugado</option><option>Cedido</option></select>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600">
+          <input type="checkbox" id="c-cesta" style="width:15px;height:15px;accent-color:var(--v)"> Recebe cesta básica de outro local?
+        </label>
+        <div id="c-cesta-w" style="display:none;margin-top:8px"><div class="fgr"><label>De onde?</label><input id="c-cesta-de" placeholder="Informe o local"></div></div>
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--gr);margin-bottom:7px">Situação Ocupacional</div>
+        <div class="ckg">
+          <label class="cki"><input type="checkbox" id="c-ocp-f" onchange="ckS(this)"> Mercado formal</label>
+          <label class="cki"><input type="checkbox" id="c-ocp-i" onchange="ckS(this)"> Mercado informal</label>
+          <label class="cki"><input type="checkbox" id="c-ocp-d" onchange="ckS(this)"> Desempregado</label>
+          <label class="cki"><input type="checkbox" id="c-ocp-a" onchange="ckS(this)"> Aposentado</label>
+        </div>
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--gr);margin-bottom:7px">Benefícios do Governo</div>
+        <div class="ckg">
+          <label class="cki"><input type="checkbox" id="c-b-b" onchange="ckS(this)"> Bolsa Família</label>
+          <label class="cki"><input type="checkbox" id="c-b-i" onchange="ckS(this)"> INSS</label>
+          <label class="cki"><input type="checkbox" id="c-b-s" onchange="ckS(this)"> Seguro desemprego</label>
+          <label class="cki"><input type="checkbox" id="c-b-g" onchange="ckS(this)"> Vale gás</label>
+          <label class="cki"><input type="checkbox" id="c-b-l" onchange="ckS(this)"> Leite</label>
+        </div>
+      </div>
+
+      <div class="fst">💑 Cônjuge / Companheiro(a)</div>
+      <div class="fgr" style="margin-bottom:10px"><label>Possui cônjuge ou companheiro(a)?</label>
+        <div class="yn"><button class="yb yes" id="yn-c-s" onclick="ynT('conj',true)">SIM</button><button class="yb no s" id="yn-c-n" onclick="ynT('conj',false)">NÃO</button></div>
+      </div>
+      <div id="conj-frm" style="display:none">
+        <div class="fg">
+          <div class="fgr full"><label>Nome do cônjuge</label><input id="c-cname" placeholder="Nome completo"></div>
+          <div class="fgr"><label>Sexo</label><select id="c-csexo"><option value="">Selecione</option><option>Masculino</option><option>Feminino</option><option>Outro</option></select></div>
+          <div class="fgr"><label>Data de nascimento</label><input type="date" id="c-cnasc"></div>
+          <div class="fgr"><label>Grau de parentesco</label><input id="c-cpar" placeholder="Ex: Cônjuge, Companheiro"></div>
+          <div class="fgr full"><label>Observações</label><input id="c-cobs" placeholder="Obs..."></div>
+        </div>
+      </div>
+
+      <div class="fst">👶 Filhos</div>
+      <div class="fgr" style="margin-bottom:10px"><label>Possui filhos?</label>
+        <div class="yn"><button class="yb yes" id="yn-f-s" onclick="ynT('filho',true)">SIM</button><button class="yb no s" id="yn-f-n" onclick="ynT('filho',false)">NÃO</button></div>
+      </div>
+      <div id="filho-wrap" style="display:none">
+        <div id="filho-list"></div>
+        <button class="btn btn-o btn-sm" onclick="addFilho()" style="margin-top:5px">+ Adicionar filho</button>
+      </div>
+
+      <div class="fst">🏥 Saúde / Deficiência</div>
+      <div class="fgr" style="margin-bottom:10px"><label>Alguém do convívio possui problema de saúde ou deficiência?</label>
+        <div class="yn"><button class="yb yes" id="yn-s-s" onclick="ynT('saude',true)">SIM</button><button class="yb no s" id="yn-s-n" onclick="ynT('saude',false)">NÃO</button></div>
+      </div>
+      <div id="saude-wrap" style="display:none">
+        <div id="saude-list"></div>
+        <button class="btn btn-o btn-sm" onclick="addSaude()" style="margin-top:5px">+ Adicionar pessoa</button>
+      </div>
+
+      <div class="fst">⚙️ Status</div>
+      <div class="fgr"><label>Status do Cadastro</label>
+        <select id="c-status"><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option></select>
+      </div>
+    </div>
+    <div class="md-foot">
+      <button class="btn btn-o" onclick="closeMo('mo-cad')">Cancelar</button>
+      <button class="btn btn-p" onclick="salvarCad()">✅ Salvar Cadastro</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<script>
+// ——— LOGO ———
+const LB64='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';
+document.getElementById('sb-img').src='data:image/jpeg;base64,'+LB64;
+document.getElementById('login-logo').src='data:image/jpeg;base64,'+LB64;
+
+// ——— SUPABASE CONFIG ———
+// INSTRUÇÃO: Substitua os valores abaixo com os dados do seu projeto Supabase
+const SUPA_URL = 'https://ttvkivwgwmjhmitlvzpb.supabase.co'; // Ex: https://xyzabcdef.supabase.co
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0dmtpdndnd21qaG1pdGx2enBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjcyNTcsImV4cCI6MjA5MjQ0MzI1N30.vWsrE6pLLKBLTW050VhqhjRNnlrGNBqn0gbY0kN8hmE';
+
+const supa = {
+  async req(method, path, body) {
+    const r = await fetch(SUPA_URL + '/rest/v1/' + path, {
+      method,
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!r.ok) { const e = await r.text(); throw new Error(e); }
+    if (method === 'DELETE' || (method === 'PATCH' && r.status === 204)) return null;
+    return r.json();
+  },
+  get: (path) => supa.req('GET', path),
+  post: (path, b) => supa.req('POST', path, b),
+  patch: (path, b) => supa.req('PATCH', path, b),
+  del: (path) => supa.req('DELETE', path),
+};
+
+// ——— LOGIN ———
+let usuarioLogado = null;
+
+async function doLogin(){
+  const usr=document.getElementById('login-usr').value.trim().toLowerCase();
+  const pwd=document.getElementById('login-pwd').value;
+  const err=document.getElementById('login-err');
+  const btn=document.querySelector('.login-btn');
+  btn.textContent='Entrando...';btn.disabled=true;
+  try {
+    const res = await supa.get('usuarios?usuario=eq.'+encodeURIComponent(usr)+'&senha=eq.'+encodeURIComponent(pwd));
+    if(res && res.length > 0){
+      usuarioLogado = res[0];
+      err.style.display='none';
+      sessionStorage.setItem('amp_auth','1');
+      sessionStorage.setItem('amp_usr', JSON.stringify(usuarioLogado));
+      document.getElementById('login-screen').style.display='none';
+      initApp();
+    } else {
+      err.style.display='block';
+      document.getElementById('login-pwd').value='';
+      document.getElementById('login-usr').focus();
+    }
+  } catch(e) {
+    err.textContent='Erro de conexão. Verifique sua internet.';
+    err.style.display='block';
+  }
+  btn.textContent='Entrar';btn.disabled=false;
+}
+
+let P=[];
+let R=[];
+let editId=null;
+let cR=null,cS=null;
+let camStream=null,camAtiva=false,scanLoop=null;
+let _appReady=false;
+
+async function initApp(){
+  // Restaurar usuário da sessão
+  if(!usuarioLogado){
+    const s = sessionStorage.getItem('amp_usr');
+    if(s) try{ usuarioLogado = JSON.parse(s); }catch(e){}
+  }
+  // Mostrar menu admin
+  if(usuarioLogado && usuarioLogado.perfil === 'admin'){
+    document.getElementById('menu-admin').style.display='';
+    document.getElementById('menu-usuarios').style.display='';
+  }
+  try {
+    showLoading(true);
+    const [pessoas, retiradas] = await Promise.all([
+      supa.get('beneficiarios?order=nome.asc'),
+      supa.get('retiradas?order=data.desc,hora.desc')
+    ]);
+    P = pessoas || [];
+    R = retiradas || [];
+    _appReady = true;
+    updDash();
+    aplicarPermissoes();
+    showLoading(false);
+  } catch(e) {
+    showLoading(false);
+    toast('Erro ao conectar ao banco de dados. Verifique as configurações do Supabase.', true);
+    console.error('Supabase init error:', e);
+  }
+}
+
+function showLoading(show) {
+  let el = document.getElementById('loading-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-overlay';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(255,255,255,0.85);z-index:5000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-family:DM Sans,sans-serif;font-size:14px;color:#2D6A4F;font-weight:600';
+    el.innerHTML = '<div style="width:40px;height:40px;border:3px solid #D8F3DC;border-top-color:#2D6A4F;border-radius:50%;animation:spin 0.8s linear infinite"></div><div>Carregando dados...</div>';
+    document.body.appendChild(el);
+    const style = document.createElement('style');
+    style.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+  }
+  el.style.display = show ? 'flex' : 'none';
+}
+
+async function save(){
+  // Compatibilidade: save() agora é no-op (cada operação salva direto)
+}
+function uid(){return Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(-2).toUpperCase();}
+function hoje(){return new Date().toISOString().slice(0,10);}
+function agora(){return new Date().toTimeString().slice(0,5);}
+function fmtD(d){return d?d.split('-').reverse().join('/'):'—';}
+function ini(n){return(n||'?').split(' ').slice(0,2).map(p=>p[0]).join('').toUpperCase();}
+
+function toast(msg,err){
+  const t=document.getElementById('toast');
+  t.style.background=err?'#B7572A':'#2D6A4F';
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ——— NAV ———
+function goPage(id){
+  if(camAtiva) pararCam();
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const map={dash:'dashboard',pessoas:'benefici',retiradas:'registrar',coletor:'coletor',relatorio:'relatório',carteirinhas:'carteirinha'};
+  document.querySelectorAll('.ni').forEach(n=>{if(n.textContent.toLowerCase().includes(map[id]||id))n.classList.add('active');});
+  if(id==='dash')updDash();
+  if(id==='pessoas')rendP(P);
+  if(id==='retiradas'){rendRet();fillSel('ret-p');document.getElementById('ret-d').value=hoje();document.getElementById('ret-h').value=agora();}
+  if(id==='coletor')rendHoje();
+  if(id==='carteirinhas')rendCart(P);
+  if(id==='relatorio'){fillSel('rel-pes');document.getElementById('rel-data').value=hoje();}
+  if(id==='usuarios')rendUsuarios();
+}
+
+// ——— MODAL ———
+function closeMo(id){document.getElementById(id).classList.remove('show');}
+
+function openCad(pId){
+  editId=pId||null;
+  document.getElementById('md-tit').textContent=pId?'✏️ Editar Cadastro':'✏️ Novo Cadastro';
+  if(pId){const p=P.find(x=>x.id===pId);if(p)preencheMo(p);}
+  else{limpaMo();document.getElementById('c-dtcad').value=hoje();}
+  document.getElementById('mo-cad').classList.add('show');
+}
+
+function limpaMo(){
+  ['c-nome','c-tel','c-nat','c-ocup','c-renda','c-rel','c-mae','c-pai','c-dtcad','c-nreg','c-rg','c-cpf','c-end','c-num','c-comp','c-bairro','c-cid','c-cesta-de','c-cname','c-cnasc','c-cpar','c-cobs'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  removerFoto();;
+  ['c-nasc','c-cnasc'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['c-sexo','c-esc','c-conj','c-resid','c-csexo','c-status'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('c-status').value='Ativo';
+  document.getElementById('c-cesta').checked=false;
+  document.getElementById('c-cesta-w').style.display='none';
+  ['c-ocp-f','c-ocp-i','c-ocp-d','c-ocp-a','c-b-b','c-b-i','c-b-s','c-b-g','c-b-l'].forEach(id=>{const e=document.getElementById(id);if(e){e.checked=false;ckS(e);}});
+  ynT('conj',false);ynT('filho',false);ynT('saude',false);
+  document.getElementById('filho-list').innerHTML='';
+  document.getElementById('saude-list').innerHTML='';
+}
+
+function preencheMo(p){
+  limpaMo();
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
+  set('c-nome',p.nome);set('c-nasc',p.nasc);set('c-sexo',p.sexo);set('c-tel',p.tel);
+  set('c-nat',p.nat);set('c-ocup',p.ocup);set('c-renda',p.renda);set('c-rel',p.rel);
+  set('c-mae',p.mae);set('c-pai',p.pai);set('c-dtcad',p.dtcad);set('c-nreg',p.nreg);
+  set('c-rg',p.rg);set('c-cpf',p.cpf);set('c-esc',p.esc);set('c-conj',p.conj);
+  set('c-resid',p.resid);set('c-status',p.status||'Ativo');
+  set('c-end',p.end);set('c-num',p.num);set('c-comp',p.comp);set('c-bairro',p.bairro);
+  set('c-cid',p.cid);set('c-est',p.est||'Paraná');
+  if(p.cesta){document.getElementById('c-cesta').checked=true;document.getElementById('c-cesta-w').style.display='block';set('c-cesta-de',p.cestad);}
+  (p.ocup_c||[]).forEach(k=>{const e=document.getElementById('c-ocp-'+k);if(e){e.checked=true;ckS(e);}});
+  (p.bens||[]).forEach(k=>{const e=document.getElementById('c-b-'+k);if(e){e.checked=true;ckS(e);}});
+  if(p.cSim){ynT('conj',true);set('c-cname',p.cNome);set('c-csexo',p.cSexo);set('c-cnasc',p.cNasc);set('c-cpar',p.cPar);set('c-cobs',p.cObs);}
+  if(p.fSim){ynT('filho',true);(p.filhos||[]).forEach(f=>addFilho(f));}
+  if(p.sSim){ynT('saude',true);(p.saudes||[]).forEach(s=>addSaude(s));}
+  // foto
+  if(p.foto){
+    const prev=document.getElementById('foto-preview');
+    prev.innerHTML=`<img src="${p.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    document.getElementById('btn-rm-foto').style.display='';
+    window._fotoAtual=p.foto;
+  }
+}
+
+async function salvarCad(){
+  const nome=document.getElementById('c-nome').value.trim();
+  const nreg=document.getElementById('c-nreg').value.trim();
+  if(!nome){toast('Informe o nome completo',true);return;}
+  if(!nreg){toast('Informe o Nº de Registro',true);return;}
+  const dup=P.find(p=>p.nreg===nreg&&p.id!==editId);
+  if(dup){toast('Nº Registro já usado por: '+dup.nome,true);return;}
+  const g=id=>{const e=document.getElementById(id);return e?e.value:'';};
+  const ck=id=>document.getElementById(id)?.checked;
+  const ocup_c=['f','i','d','a'].filter(k=>ck('c-ocp-'+k));
+  const bens=['b','i','s','g','l'].filter(k=>ck('c-b-'+k));
+  const fSim=document.getElementById('yn-f-s').classList.contains('s');
+  const filhos=[...document.querySelectorAll('.fi-item')].map(el=>({nome:el.querySelector('.fn').value,sexo:el.querySelector('.fs').value,nasc:el.querySelector('.fd').value,obs:el.querySelector('.fo').value}));
+  const sSim=document.getElementById('yn-s-s').classList.contains('s');
+  const saudes=[...document.querySelectorAll('.sa-item')].map(el=>({quem:el.querySelector('.sq').value,prob:el.querySelector('.sp').value,trat:el.querySelector('.st').value,med:el.querySelector('.sm').value,def:el.querySelector('.sd').value,loc:el.querySelector('.sl').value,nec:el.querySelector('.sn').value}));
+  const p={
+    id:editId||uid(),nome,nreg,
+    nasc:g('c-nasc'),sexo:g('c-sexo'),tel:g('c-tel'),nat:g('c-nat'),
+    ocup:g('c-ocup'),renda:g('c-renda'),rel:g('c-rel'),mae:g('c-mae'),
+    pai:g('c-pai'),dtcad:g('c-dtcad'),rg:g('c-rg'),cpf:g('c-cpf'),
+    esc:g('c-esc'),conj:g('c-conj'),resid:g('c-resid'),
+    end:g('c-end'),num:g('c-num'),comp:g('c-comp'),bairro:g('c-bairro'),
+    cid:g('c-cid'),est:g('c-est')||'Paraná',
+    status:g('c-status')||'Ativo',
+    cesta:ck('c-cesta'),cestad:g('c-cesta-de'),
+    ocup_c,bens,
+    cSim:document.getElementById('yn-c-s').classList.contains('s'),
+    cNome:g('c-cname'),cSexo:g('c-csexo'),cNasc:g('c-cnasc'),cPar:g('c-cpar'),cObs:g('c-cobs'),
+    fSim,filhos,sSim,saudes,
+    foto:window._fotoAtual||null,
+    criadoEm:editId?(P.find(x=>x.id===editId)?.criadoEm||new Date().toISOString()):new Date().toISOString()
+  };
+  try {
+    if(editId){
+      await supa.patch('beneficiarios?id=eq.'+editId, p);
+      const i=P.findIndex(x=>x.id===editId);
+      if(i>=0)P[i]=p;
+      toast('Cadastro atualizado!');
+    } else {
+      const res = await supa.post('beneficiarios', p);
+      if(res && res[0]) P.push(res[0]); else P.push(p);
+      toast('Cadastro salvo!');
+    }
+  } catch(e) {
+    toast('Erro ao salvar: ' + e.message, true);
+    return;
+  }
+  closeMo('mo-cad');editId=null;
+  rendP(P);rendCart(P);
+}
+
+// ——— SIM/NÃO ———
+function ynT(key,sim){
+  const s=document.getElementById('yn-'+key[0]+'-s');
+  const n=document.getElementById('yn-'+key[0]+'-n');
+  const maps={conj:'conj-frm',filho:'filho-wrap',saude:'saude-wrap'};
+  const w=document.getElementById(maps[key]);
+  if(s)s.className='yb yes'+(sim?' s':'');
+  if(n)n.className='yb no'+(sim?'':' s');
+  if(w)w.style.display=sim?'block':'none';
+}
+
+// ——— CHECKBOX STYLE ———
+function ckS(el){const p=el.closest('.cki');if(p)p.classList.toggle('chk',el.checked);}
+
+document.getElementById('c-cesta').addEventListener('change',function(){
+  document.getElementById('c-cesta-w').style.display=this.checked?'block':'none';
+});
+
+// ——— FILHOS ———
+function addFilho(d){
+  d=d||{};
+  const div=document.createElement('div');
+  div.className='sub-item fi-item';
+  div.innerHTML=`<button class="sub-rm" onclick="this.parentElement.remove()">✕</button>
+    <div class="fg" style="margin-top:4px">
+      <div class="fgr full"><label>Nome do filho(a)</label><input class="fn" value="${d.nome||''}" placeholder="Nome completo"></div>
+      <div class="fgr"><label>Sexo</label><select class="fs"><option value="">Selecione</option><option ${d.sexo==='Masculino'?'selected':''}>Masculino</option><option ${d.sexo==='Feminino'?'selected':''}>Feminino</option><option ${d.sexo==='Outro'?'selected':''}>Outro</option></select></div>
+      <div class="fgr"><label>Data de nascimento</label><input type="date" class="fd" value="${d.nasc||''}"></div>
+      <div class="fgr full"><label>Observações</label><input class="fo" value="${d.obs||''}" placeholder="Obs..."></div>
+    </div>`;
+  document.getElementById('filho-list').appendChild(div);
+}
+
+// ——— SAÚDE ———
+function addSaude(d){
+  d=d||{};
+  const opts=v=>`<option value="">Selecione</option>${['Titular','Cônjuge','Filho(a)','Outro familiar'].map(o=>`<option ${d.quem===o?'selected':''}>${o}</option>`).join('')}`;
+  const div=document.createElement('div');
+  div.className='sub-item sa-item';
+  div.innerHTML=`<button class="sub-rm" onclick="this.parentElement.remove()">✕</button>
+    <div class="fg" style="margin-top:4px">
+      <div class="fgr"><label>Quem possui problema</label><select class="sq">${opts()}</select></div>
+      <div class="fgr"><label>Problema de saúde</label><input class="sp" value="${d.prob||''}" placeholder="Descreva"></div>
+      <div class="fgr"><label>Tipo de tratamento</label><input class="st" value="${d.trat||''}" placeholder="Ex: Médico..."></div>
+      <div class="fgr"><label>Medicamento</label><input class="sm" value="${d.med||''}" placeholder="Nome do medicamento"></div>
+      <div class="fgr"><label>Deficiência</label><input class="sd" value="${d.def||''}" placeholder="Se houver"></div>
+      <div class="fgr"><label>Local de acompanhamento</label><input class="sl" value="${d.loc||''}" placeholder="UBS, CAPS..."></div>
+      <div class="fgr full"><label>Necessita realizar tratamento</label><input class="sn" value="${d.nec||''}" placeholder="Descreva"></div>
+    </div>`;
+  document.getElementById('saude-list').appendChild(div);
+}
+
+// ——— MÁSCARAS ———
+function mCpf(el){let v=el.value.replace(/\D/g,'');v=v.replace(/(\d{3})(\d)/,'$1.$2');v=v.replace(/(\d{3})\.(\d{3})(\d)/,'$1.$2.$3');v=v.replace(/(\d{3})\.(\d{3})\.(\d{3})(\d)/,'$1.$2.$3-$4');el.value=v;}
+function mTel(el){let v=el.value.replace(/\D/g,'');v=v.replace(/^(\d{2})(\d)/,'($1) $2');v=v.replace(/(\d{5})(\d)/,'$1-$2');el.value=v;}
+
+// ——— PESSOAS ———
+function rendP(lista){
+  const tb=document.getElementById('tb-p');
+  if(!lista.length){tb.innerHTML=`<tr><td colspan="8"><div class="emp"><div class="emp-ic">👥</div><div>Nenhum beneficiário cadastrado</div></div></td></tr>`;return;}
+  tb.innerHTML=lista.map(p=>{
+    const ult=[...R].filter(r=>r.pessoaId===p.id).pop();
+    return `<tr>
+      <td><div class="pc"><div class="av" style="${p.foto?'padding:0;overflow:hidden':''}">${p.foto?`<img src="${p.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:ini(p.nome)}</div><div><div class="pn">${p.nome}</div><div class="pid">${p.nreg||'—'}</div></div></div></td>
+      <td><strong>${p.nreg||'—'}</strong></td>
+      <td>${p.cpf||'—'}<br><small style="color:var(--ci)">${p.rg||''}</small></td>
+      <td>${p.tel||'—'}</td>
+      <td>${p.conj||'—'}</td>
+      <td>${ult?fmtD(ult.data)+' '+ult.hora:'—'}</td>
+      <td><span class="badge ${p.status==='Ativo'?'b-ok':'b-off'}"><span class="dot ${p.status==='Ativo'?'dv':'dt'}"></span>${p.status||'Ativo'}</span></td>
+      <td style="display:flex;gap:5px">
+        <button class="btn btn-sm" style="background:#EFF6FF;color:#1D4ED8;border:1.5px solid #BFDBFE" onclick="imprimirFicha('${p.id}')">📄</button>
+        <button class="btn btn-o btn-sm" onclick="openCad('${p.id}')">✏️</button>
+        <button class="btn btn-sm" style="background:#FFF7ED;color:#C2410C;border:1.5px solid #FDBA74" onclick="excl('${p.id}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filtP(q){
+  const r=P.filter(p=>p.nome.toLowerCase().includes(q.toLowerCase())||(p.cpf||'').includes(q)||(p.rg||'').includes(q)||(p.nreg||'').toLowerCase().includes(q.toLowerCase()));
+  rendP(r);
+}
+
+async function excl(id){
+  if(!confirm('Excluir este beneficiário?'))return;
+  try {
+    await supa.del('beneficiarios?id=eq.'+id);
+    P=P.filter(p=>p.id!==id);
+    R=R.filter(r=>r.pessoaId!==id);
+    rendP(P);rendCart(P);toast('Excluído.');
+  } catch(e) { toast('Erro ao excluir: '+e.message,true); }
+}
+
+// ——— RETIRADAS ———
+function fillSel(selId){
+  const s=document.getElementById(selId);
+  if(!s)return;
+  const cur=s.value;
+  s.innerHTML='<option value="">Selecionar...</option>'+P.filter(p=>p.status==='Ativo').map(p=>`<option value="${p.id}">${p.nome} — Reg: ${p.nreg||'?'}</option>`).join('');
+  if(cur)s.value=cur;
+}
+
+async function salvarRet(){
+  const pid=document.getElementById('ret-p').value;
+  if(!pid){toast('Selecione um beneficiário',true);return;}
+  const r={id:uid(),pessoaId:pid,data:document.getElementById('ret-d').value||hoje(),hora:document.getElementById('ret-h').value||agora(),obs:document.getElementById('ret-obs').value,metodo:'Manual'};
+  try {
+    const res = await supa.post('retiradas', r);
+    R.push(res && res[0] ? res[0] : r);
+    document.getElementById('ret-obs').value='';
+    rendRet();toast('Retirada registrada!');
+  } catch(e) { toast('Erro ao registrar: '+e.message,true); }
+}
+
+function rendRet(){
+  const tb=document.getElementById('tb-ret');
+  document.getElementById('ret-cnt').textContent=R.length+' registros';
+  if(!R.length){tb.innerHTML=`<tr><td colspan="5"><div class="emp"><div class="emp-ic">🛒</div><div>Nenhuma retirada</div></div></td></tr>`;return;}
+  tb.innerHTML=[...R].reverse().map(r=>{
+    const p=P.find(x=>x.id===r.pessoaId);
+    return `<tr><td><div class="pc"><div class="av">${ini(p?.nome)}</div><div class="pn">${p?.nome||'?'}</div></div></td><td><strong>${p?.nreg||'—'}</strong></td><td>${fmtD(r.data)} ${r.hora}</td><td><span class="badge ${r.metodo==='QR Code'?'b-blue':'b-ok'}"><span class="dot ${r.metodo==='QR Code'?'db':'dv'}"></span>${r.metodo}</span></td><td>${r.obs||'—'}</td></tr>`;
+  }).join('');
+}
+
+// ——— COLETOR ———
+async function procQR(){
+  const cod=document.getElementById('qr-in').value.trim();
+  if(!cod){toast('Insira o Nº de Registro',true);return;}
+  const p=P.find(x=>x.nreg===cod||x.nreg===cod.toUpperCase());
+  const area=document.getElementById('sr-area');
+  if(!p){area.innerHTML=`<div class="sr sr-err"><span class="sr-ic">❌</span><div><div class="sr-nm" style="color:#C2410C">Não encontrado</div><div class="sr-inf">Nº de Registro "${cod}" não encontrado.</div></div></div>`;toast('Não encontrado',true);return;}
+  if(p.status==='Inativo'){area.innerHTML=`<div class="sr sr-err"><span class="sr-ic">⛔</span><div><div class="sr-nm" style="color:#C2410C">${p.nome}</div><div class="sr-inf">Beneficiário inativo.</div></div></div>`;return;}
+  if(R.some(r=>r.pessoaId===p.id&&r.data===hoje())){area.innerHTML=`<div class="sr" style="background:#FFF7ED;border:2px solid #FB923C"><span class="sr-ic">⚠️</span><div><div class="sr-nm" style="color:#C2410C">${p.nome}</div><div class="sr-inf">Já retirou cesta hoje!</div></div></div>`;return;}
+  const r={id:uid(),pessoaId:p.id,data:hoje(),hora:agora(),obs:'',metodo:'QR Code'};
+  try {
+    const res = await supa.post('retiradas', r);
+    R.push(res && res[0] ? res[0] : r);
+    area.innerHTML=`<div class="sr sr-ok"><span class="sr-ic">✅</span><div><div class="sr-nm">${p.nome}</div><div class="sr-inf">Reg: ${p.nreg} • Registrado às ${agora()}</div></div></div>`;
+    document.getElementById('qr-in').value='';rendHoje();toast('Retirada registrada via QR!');
+    setTimeout(()=>area.innerHTML='',4000);
+  } catch(e) { toast('Erro ao registrar: '+e.message,true); }
+}
+
+function rendHoje(){
+  const tb=document.getElementById('tb-hoje');
+  const h=R.filter(r=>r.data===hoje());
+  if(!h.length){tb.innerHTML=`<tr><td colspan="4"><div class="emp"><div class="emp-ic">📱</div><div>Nenhuma retirada hoje</div></div></td></tr>`;return;}
+  tb.innerHTML=[...h].reverse().map(r=>{const p=P.find(x=>x.id===r.pessoaId);return `<tr><td><div class="pc"><div class="av">${ini(p?.nome)}</div><div class="pn">${p?.nome||'?'}</div></div></td><td><strong>${p?.nreg||'—'}</strong></td><td>${r.hora}</td><td><span class="badge b-blue"><span class="dot db"></span>${r.metodo}</span></td></tr>`;}).join('');
+}
+
+// ——— RELATÓRIOS ———
+function atuFiltros(){
+  const t=document.getElementById('rel-tipo').value;
+  document.getElementById('rf-dia').style.display=t==='dia'?'':'none';
+  document.getElementById('rf-de').style.display=t==='periodo'?'':'none';
+  document.getElementById('rf-ate').style.display=t==='periodo'?'':'none';
+  document.getElementById('rf-pes').style.display=t==='pessoa'?'':'none';
+}
+
+function gerarRel(){
+  const tipo=document.getElementById('rel-tipo').value;
+  let f=[...R],titulo='';
+  if(tipo==='dia'){const d=document.getElementById('rel-data').value;f=f.filter(r=>r.data===d);titulo='Retiradas de '+fmtD(d);}
+  else if(tipo==='periodo'){const de=document.getElementById('rel-de').value,ate=document.getElementById('rel-ate').value;f=f.filter(r=>r.data>=de&&r.data<=ate);titulo='Retiradas de '+fmtD(de)+' a '+fmtD(ate);}
+  else{const pid=document.getElementById('rel-pes').value;if(pid)f=f.filter(r=>r.pessoaId===pid);const pp=pid?P.find(x=>x.id===pid):null;titulo=pp?'Retiradas de '+pp.nome:'Todas as Retiradas';}
+  const el=document.getElementById('rel-res');
+  if(!f.length){el.innerHTML=`<div class="emp"><div class="emp-ic">📋</div><div>Nenhuma retirada encontrada.</div></div>`;return;}
+  el.innerHTML=`<div class="tc"><div class="th"><span class="tt">${titulo}</span><span style="font-size:12px;color:var(--ci)">${f.length} retirada(s)</span></div>
+    <table><thead><tr><th>Beneficiário</th><th>Nº Registro</th><th>CPF</th><th>Data</th><th>Hora</th><th>Método</th><th>Obs.</th></tr></thead>
+    <tbody>${f.map(r=>{const p=P.find(x=>x.id===r.pessoaId);return`<tr><td><div class="pc"><div class="av">${ini(p?.nome)}</div><div class="pn">${p?.nome||'?'}</div></div></td><td><strong>${p?.nreg||'—'}</strong></td><td>${p?.cpf||'—'}</td><td>${fmtD(r.data)}</td><td>${r.hora}</td><td><span class="badge ${r.metodo==='QR Code'?'b-blue':'b-ok'}">${r.metodo}</span></td><td>${r.obs||'—'}</td></tr>`;}).join('')}</tbody>
+    </table></div>`;
+}
+
+function printRel(){gerarRel();setTimeout(()=>window.print(),200);}
+
+// ——— CARTEIRINHAS ———
+function rendCart(lista){
+  const grid=document.getElementById('cg-cart');
+  if(!lista.length){grid.innerHTML=`<div class="emp" style="grid-column:1/-1"><div class="emp-ic">🪪</div><div>Cadastre beneficiários para gerar carteirinhas</div></div>`;return;}
+
+  grid.innerHTML=lista.map(p=>`
+    <div class="card-wrap">
+      <!-- Card visual (tela) -->
+      <div class="card-id">
+        <div class="ci-lr">
+          <img class="ci-logo" src="data:image/jpeg;base64,${LB64}" alt="">
+          <div><div class="ci-nm">Ampare</div><div class="ci-sb">Assist. Múltipla de Amparo Renovada</div></div>
+        </div>
+        <div class="ci-dv"></div>
+        <div class="ci-pr">
+          <div class="ci-av" style="${p.foto?'padding:0;border-radius:6px;background:transparent':''}">${p.foto?`<img src="${p.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:6px">`:ini(p.nome)}</div>
+          <div style="flex:1">
+            <div class="ci-pn">${p.nome}</div>
+            <div class="ci-pd">${p.cid||''}${p.est?' - '+p.est:''}</div>
+          </div>
+          <div class="ci-qr" id="qr-${p.id}" style="flex-shrink:0"></div>
+        </div>
+        <div class="ci-dv"></div>
+        <div class="ci-ir"><span class="ci-il">Nº Registro</span><span class="ci-iv" style="font-size:15px;color:#86EFAC">${p.nreg||'—'}</span></div>
+        <div class="ci-ir"><span class="ci-il">Nascimento</span><span class="ci-iv">${fmtD(p.nasc)||'—'}</span></div>
+        <div class="ci-ir"><span class="ci-il">CPF</span><span class="ci-iv">${p.cpf||'—'}</span></div>
+        <div class="ci-bot">
+          <div class="ci-id">ID: ${p.id} &nbsp;|&nbsp; Cad.: ${fmtD(p.dtcad||p.criadoEm?.slice(0,10))}</div>
+        </div>
+      </div>
+      <!-- Card de impressão (papel) -->
+      <div class="print-card">
+        <div class="pc-header">
+          <img class="pc-logo" src="data:image/jpeg;base64,${LB64}" alt="">
+          <div class="pc-org">
+            <div class="pc-org-nm">Ampare</div>
+            <div class="pc-org-sb">Assistência Múltipla<br>de Amparo Renovada</div>
+          </div>
+        </div>
+        <div class="pc-body">
+          <div class="pc-top-row">
+            <div class="pc-av">${p.foto?`<img src="${p.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:ini(p.nome)}</div>
+            <div class="pc-info">
+              <div class="pc-name">${p.nome}</div>
+              <div class="pc-city">${p.cid||''}${p.est?' - '+p.est:''}</div>
+            </div>
+            <div class="pc-qr-box" id="pqr-${p.id}"></div>
+          </div>
+          <div class="pc-divider"></div>
+          <div class="pc-fields">
+            <div class="pc-row">
+              <span class="pc-label">Nº Registro</span>
+              <span class="pc-val nreg">${p.nreg||'—'}</span>
+            </div>
+            <div class="pc-row">
+              <span class="pc-label">CPF</span>
+              <span class="pc-val">${p.cpf||'—'}</span>
+            </div>
+            <div class="pc-row">
+              <span class="pc-label">Nascimento</span>
+              <span class="pc-val">${fmtD(p.nasc)||'—'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ci-acts">
+        <button class="btn btn-p btn-sm" onclick="imprimirUm('${p.id}')">🖨️ Imprimir</button>
+        <button class="btn btn-o btn-sm" onclick="openCad('${p.id}')">✏️ Editar</button>
+      </div>
+    </div>`).join('');
+
+  lista.forEach(p=>{
+    // QR tela
+    const el=document.getElementById('qr-'+p.id);
+    if(el&&!el.querySelector('canvas')){
+      try{new QRCode(el,{text:p.nreg||p.id,width:60,height:60,colorDark:'#1B2124',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});}catch(e){}
+    }
+    // QR impressão - usa canvas com conversão forçada
+    const el2=document.getElementById('pqr-'+p.id);
+    if(el2&&!el2.dataset.qrDone){
+      el2.dataset.qrDone='1';
+      try{
+        new QRCode(el2,{text:p.nreg||p.id,width:56,height:56,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+      }catch(e){}
+    }
+  });
+}
+
+function filtCart(q){rendCart(P.filter(p=>p.nome.toLowerCase().includes(q.toLowerCase())||(p.nreg||'').includes(q)));}
+
+// Imprimir apenas uma carteirinha
+function imprimirUm(id){
+  document.querySelectorAll('.card-wrap').forEach(w=>{w.style.display='none';});
+  const alvo=document.querySelector('#qr-'+id)?.closest('.card-wrap');
+  if(alvo)alvo.style.display='flex';
+  window.print();
+  document.querySelectorAll('.card-wrap').forEach(w=>{w.style.display='';});
+}
+
+// ——— DASHBOARD ———
+function updDash(){
+  const now=new Date();
+  document.getElementById('dash-dt').textContent=now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const mes=now.toISOString().slice(0,7);
+  document.getElementById('st-p').textContent=P.length;
+  document.getElementById('st-a').textContent=P.filter(p=>p.status==='Ativo').length;
+  document.getElementById('st-r').textContent=R.filter(r=>r.data?.startsWith(mes)).length;
+  document.getElementById('st-h').textContent=R.filter(r=>r.data===hoje()).length;
+  const tb=document.getElementById('dash-ret');
+  const ults=[...R].reverse().slice(0,5);
+  if(!ults.length)tb.innerHTML=`<tr><td colspan="4"><div class="emp"><div class="emp-ic">📋</div><div>Nenhuma retirada ainda</div></div></td></tr>`;
+  else tb.innerHTML=ults.map(r=>{const p=P.find(x=>x.id===r.pessoaId);return`<tr><td><div class="pc"><div class="av">${ini(p?.nome)}</div><div class="pn">${p?.nome||'?'}</div></div></td><td><strong>${p?.nreg||'—'}</strong></td><td>${fmtD(r.data)} ${r.hora}</td><td><span class="badge ${r.metodo==='QR Code'?'b-blue':'b-ok'}">${r.metodo}</span></td></tr>`;}).join('');
+  buildCharts();
+}
+
+function buildCharts(){
+  const meses=[],conts=[];
+  for(let i=5;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);const k=d.toISOString().slice(0,7);meses.push(d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}));conts.push(R.filter(r=>r.data?.startsWith(k)).length);}
+  if(cR)cR.destroy();
+  cR=new Chart(document.getElementById('chartRet').getContext('2d'),{type:'bar',data:{labels:meses,datasets:[{label:'Retiradas',data:conts,backgroundColor:'rgba(82,183,136,.72)',borderColor:'#2D6A4F',borderWidth:2,borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'#F1F5F9'}},x:{grid:{display:false}}}}});
+  const at=P.filter(p=>p.status==='Ativo').length,in2=P.filter(p=>p.status==='Inativo').length;
+  if(cS)cS.destroy();
+  cS=new Chart(document.getElementById('chartSt').getContext('2d'),{type:'doughnut',data:{labels:['Ativos','Inativos'],datasets:[{data:[at||0,in2||0],backgroundColor:['#52B788','#FB923C'],borderWidth:0,hoverOffset:6}]},options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:9}}},cutout:'60%'}});
+}
+
+
+// ——— USUÁRIOS ———
+let U = [];
+let editUsrId = null;
+
+function togglePermissoes(perfil){
+  const wrap = document.getElementById('permissoes-wrap');
+  if(wrap) wrap.style.display = perfil==='admin' ? 'none' : '';
+}
+
+function getPerms(){
+  return {
+    dashboard: document.getElementById('perm-dashboard')?.checked ?? true,
+    beneficiarios: document.getElementById('perm-beneficiarios')?.checked ?? true,
+    retiradas: document.getElementById('perm-retiradas')?.checked ?? true,
+    coletor: document.getElementById('perm-coletor')?.checked ?? true,
+    relatorio: document.getElementById('perm-relatorio')?.checked ?? true,
+    carteirinhas: document.getElementById('perm-carteirinhas')?.checked ?? true,
+  };
+}
+
+function setPerms(perms){
+  if(!perms) return;
+  ['dashboard','beneficiarios','retiradas','coletor','relatorio','carteirinhas'].forEach(k=>{
+    const el = document.getElementById('perm-'+k);
+    if(el) el.checked = perms[k] !== false;
+  });
+}
+
+function aplicarPermissoes(){
+  if(!usuarioLogado || usuarioLogado.perfil === 'admin') return;
+  const perms = usuarioLogado.permissoes || {};
+  const menuMap = {
+    dashboard: ["goPage('dash')"],
+    beneficiarios: ["goPage('pessoas')", "openCad()"],
+    retiradas: ["goPage('retiradas')"],
+    coletor: ["goPage('coletor')"],
+    relatorio: ["goPage('relatorio')"],
+    carteirinhas: ["goPage('carteirinhas')"],
+  };
+  document.querySelectorAll('.ni').forEach(btn => {
+    const onclick = btn.getAttribute('onclick') || '';
+    for(const [key, matchers] of Object.entries(menuMap)){
+      if(matchers.some(m => onclick.includes(m))){
+        if(perms[key] === false){
+          btn.style.display = 'none';
+          const label = btn.previousElementSibling;
+          // Ocultar label se todos os itens desse grupo estiverem ocultos
+        }
+      }
+    }
+  });
+}
+
+async function loadUsuarios(){
+  try { U = await supa.get('usuarios?order=nome.asc') || []; } catch(e){ U=[]; }
+}
+
+function rendUsuarios(){
+  loadUsuarios().then(()=>{
+    const tb = document.getElementById('tb-usuarios');
+    if(!tb) return;
+    if(!U.length){ tb.innerHTML='<tr><td colspan="4"><div class="emp"><div class="emp-ic">👤</div><div>Nenhum usuário cadastrado</div></div></td></tr>'; return; }
+    tb.innerHTML = U.map(u=>`<tr>
+      <td><strong>${u.nome||'—'}</strong></td>
+      <td>${u.usuario}</td>
+      <td><span class="badge ${u.perfil==='admin'?'b-blue':'b-ok'}">${u.perfil==='admin'?'Administrador':'Operador'}</span></td>
+      <td style="display:flex;gap:5px">
+        <button class="btn btn-o btn-sm" onclick="openEditUsuario('${u.id}')">✏️</button>
+        <button class="btn btn-sm" style="background:#FFF7ED;color:#C2410C;border:1.5px solid #FDBA74" onclick="exclUsuario('${u.id}')">🗑️</button>
+      </td>
+    </tr>`).join('');
+  });
+}
+
+function openNovoUsuario(){
+  editUsrId = null;
+  document.getElementById('mo-usr-tit').textContent = '➕ Novo Usuário';
+  document.getElementById('u-nome').value='';
+  document.getElementById('u-login').value='';
+  document.getElementById('u-senha').value='';
+  document.getElementById('u-perfil').value='operador';
+  document.getElementById('mo-usuario').classList.add('show');
+}
+
+function openEditUsuario(id){
+  const u = U.find(x=>x.id===id);
+  if(!u) return;
+  editUsrId = id;
+  document.getElementById('mo-usr-tit').textContent = '✏️ Editar Usuário';
+  document.getElementById('u-nome').value = u.nome||'';
+  document.getElementById('u-login').value = u.usuario;
+  document.getElementById('u-senha').value = '';
+  document.getElementById('u-perfil').value = u.perfil||'operador';
+  togglePermissoes(u.perfil||'operador');
+  setPerms(u.permissoes);
+  document.getElementById('mo-usuario').classList.add('show');
+}
+
+async function salvarUsuario(){
+  const nome = document.getElementById('u-nome').value.trim();
+  const usuario = document.getElementById('u-login').value.trim().toLowerCase();
+  const senha = document.getElementById('u-senha').value.trim();
+  const perfil = document.getElementById('u-perfil').value;
+  if(!usuario){ toast('Informe o login', true); return; }
+  if(!editUsrId && !senha){ toast('Informe a senha', true); return; }
+  const perms = perfil === 'admin' ? null : getPerms();
+  try {
+    if(editUsrId){
+      const dados = {nome, usuario, perfil, permissoes: perms};
+      if(senha) dados.senha = senha;
+      await supa.patch('usuarios?id=eq.'+editUsrId, dados);
+      toast('Usuário atualizado!');
+    } else {
+      await supa.post('usuarios', {id: uid(), nome, usuario, senha, perfil, permissoes: perms});
+      toast('Usuário criado!');
+    }
+    closeMo('mo-usuario');
+    rendUsuarios();
+  } catch(e){ toast('Erro: '+(e.message||'verifique se o login já existe'), true); }
+}
+
+async function exclUsuario(id){
+  if(U.length <= 1){ toast('Não é possível excluir o único usuário!', true); return; }
+  if(!confirm('Excluir este usuário?')) return;
+  try {
+    await supa.del('usuarios?id=eq.'+id);
+    toast('Usuário excluído.');
+    rendUsuarios();
+  } catch(e){ toast('Erro ao excluir', true); }
+}
+
+// ——— CÂMERA QR ———
+
+async function toggleCam() {
+  if (camAtiva) {
+    pararCam();
+  } else {
+    await iniciarCam();
+  }
+}
+
+async function iniciarCam() {
+  const btn = document.getElementById('btn-cam');
+  const video = document.getElementById('qr-video');
+  const icon = document.getElementById('qr-cam-icon');
+  const statusTxt = document.getElementById('qr-status-txt');
+  const scanline = document.getElementById('scanline-el');
+
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 640 } }
+    });
+    video.srcObject = camStream;
+    await video.play();
+    video.style.display = 'block';
+    icon.style.display = 'none';
+    scanline.style.display = 'block';
+    btn.textContent = '⏹️ Parar Câmera';
+    btn.style.background = '#B7572A';
+    statusTxt.textContent = 'Aponte para o QR Code da carteirinha...';
+    camAtiva = true;
+    escanear();
+  } catch (e) {
+    statusTxt.textContent = 'Câmera não autorizada. Permita o acesso nas configurações.';
+  }
+}
+
+function pararCam() {
+  if (camStream) camStream.getTracks().forEach(t => t.stop());
+  camStream = null;
+  camAtiva = false;
+  if (scanLoop) cancelAnimationFrame(scanLoop);
+  const video = document.getElementById('qr-video');
+  const icon = document.getElementById('qr-cam-icon');
+  const btn = document.getElementById('btn-cam');
+  const statusTxt = document.getElementById('qr-status-txt');
+  const scanline = document.getElementById('scanline-el');
+  video.style.display = 'none';
+  icon.style.display = 'block';
+  scanline.style.display = 'block';
+  btn.textContent = '📷 Iniciar Câmera';
+  btn.style.background = '';
+  statusTxt.textContent = 'Toque em Iniciar Câmera para escanear';
+}
+
+async function escanear() {
+  if (!camAtiva) return;
+  const video = document.getElementById('qr-video');
+  try {
+    if ('BarcodeDetector' in window) {
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      const scan = async () => {
+        if (!camAtiva) return;
+        try {
+          const codes = await detector.detect(video);
+          if (codes.length > 0) {
+            document.getElementById('qr-in').value = codes[0].rawValue;
+            pararCam();
+            procQR();
+            return;
+          }
+        } catch(e) {}
+        scanLoop = setTimeout(scan, 300);
+      };
+      scan();
+    } else {
+      // Fallback: canvas manual para browsers sem BarcodeDetector
+      const canvas = document.getElementById('qr-canvas');
+      const scan = () => {
+        if (!camAtiva) return;
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        }
+        scanLoop = setTimeout(scan, 500);
+      };
+      scan();
+      document.getElementById('qr-status-txt').textContent = 'Câmera ativa — use o campo manual para digitar o código';
+    }
+  } catch(e) {
+    console.error('Erro scanner:', e);
+  }
+}
+
+// ——— FOTO ———
+window._fotoAtual = null;
+function onFotoChange(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const data = e.target.result;
+    window._fotoAtual = data;
+    const prev = document.getElementById('foto-preview');
+    prev.innerHTML = `<img src="${data}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    document.getElementById('btn-rm-foto').style.display='';
+  };
+  reader.readAsDataURL(file);
+}
+function removerFoto(){
+  window._fotoAtual = null;
+  document.getElementById('foto-preview').innerHTML='👤';
+  document.getElementById('btn-rm-foto').style.display='none';
+  const fi = document.getElementById('c-foto-file');
+  if(fi) fi.value='';
+}
+
+// ——— SIDEBAR TOGGLE ———
+let sbMini = false;
+function toggleSidebar(){
+  sbMini = !sbMini;
+  document.querySelector('.sb').classList.toggle('mini', sbMini);
+  document.querySelector('.main').classList.toggle('mini', sbMini);
+  document.querySelector('.sb-toggle').textContent = sbMini ? '▶' : '◀';
+  localStorage.setItem('sb_mini', sbMini?'1':'0');
+}
+
+// ——— IMPRESSÃO DE FICHA ———
+function imprimirFicha(id){
+  const p = P.find(x=>x.id===id);
+  if(!p) return;
+  const fmtD = d => d?d.split('-').reverse().join('/'):'—';
+  const w = window.open('','_blank','width=800,height=900');
+  const fotoHtml = p.foto ? `<img src="${p.foto}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #2D6A4F">` : `<div style="width:80px;height:80px;border-radius:50%;background:#D8F3DC;display:flex;align-items:center;justify-content:center;font-size:32px;border:2px solid #52B788">${(p.nome||'?').split(' ').slice(0,2).map(x=>x[0]).join('').toUpperCase()}</div>`;
+  w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Ficha - ${p.nome}</title>
+  <style>
+    body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:24px;color:#1B2124;font-size:12px}
+    .header{background:#1B4332;color:#fff;padding:16px 24px;border-radius:8px 8px 0 0;display:flex;align-items:center;gap:16px;margin-bottom:0}
+    .header-org{font-size:20px;font-weight:900;letter-spacing:1px}
+    .header-sub{font-size:9px;letter-spacing:2px;text-transform:uppercase;opacity:.7;margin-top:2px}
+    .header-title{font-size:13px;opacity:.8;margin-top:4px}
+    .perfil{background:#f8fdf8;border:1px solid #D8F3DC;padding:16px 20px;display:flex;gap:16px;align-items:center;margin-bottom:16px;border-radius:0 0 8px 8px}
+    .perfil-info h2{margin:0 0 4px;font-size:18px;color:#1B4332}
+    .perfil-info p{margin:2px 0;font-size:12px;color:#6B7280}
+    .section{margin-bottom:14px}
+    .section-title{font-size:11px;font-weight:700;color:#2D6A4F;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #D8F3DC;padding-bottom:4px;margin-bottom:10px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 20px}
+    .field{display:flex;flex-direction:column;gap:1px}
+    .field label{font-size:9px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.5px}
+    .field span{font-size:12px;color:#1B2124;font-weight:500}
+    .termo{border:1px solid #D8F3DC;border-radius:6px;padding:14px;margin-top:16px;background:#FDFAF5}
+    .termo-title{font-size:11px;font-weight:700;color:#2D6A4F;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+    .termo p{font-size:10px;color:#6B7280;line-height:1.6;margin:0 0 8px}
+    .assina{display:flex;justify-content:space-between;margin-top:24px;gap:20px}
+    .assina-line{flex:1;border-top:1px solid #1B2124;padding-top:4px;font-size:9px;color:#6B7280;text-align:center}
+    @media print{body{padding:12px}.header{page-break-inside:avoid}}
+  </style></head><body>
+  <div class="header">
+    <div>
+      <div class="header-org">Ampare</div>
+      <div class="header-sub">Assistência Múltipla de Amparo Renovada</div>
+      <div class="header-title">Ficha de Cadastro de Beneficiário</div>
+    </div>
+  </div>
+  <div class="perfil">
+    ${fotoHtml}
+    <div class="perfil-info">
+      <h2>${p.nome}</h2>
+      <p>Nº Registro: <strong>${p.nreg||'—'}</strong> &nbsp;|&nbsp; Cadastro: ${fmtD(p.dtcad)} &nbsp;|&nbsp; Status: <strong>${p.status||'Ativo'}</strong></p>
+      <p>CPF: ${p.cpf||'—'} &nbsp;|&nbsp; RG: ${p.rg||'—'}</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Dados Pessoais</div>
+    <div class="grid">
+      <div class="field"><label>Data de Nascimento</label><span>${fmtD(p.nasc)||'—'}</span></div>
+      <div class="field"><label>Sexo</label><span>${p.sexo||'—'}</span></div>
+      <div class="field"><label>Telefone</label><span>${p.tel||'—'}</span></div>
+      <div class="field"><label>Naturalidade</label><span>${p.nat||'—'}</span></div>
+      <div class="field"><label>Ocupação</label><span>${p.ocup||'—'}</span></div>
+      <div class="field"><label>Renda Familiar</label><span>${p.renda?'R$ '+p.renda:'—'}</span></div>
+      <div class="field"><label>Religião</label><span>${p.rel||'—'}</span></div>
+      <div class="field"><label>Escolaridade</label><span>${p.esc||'—'}</span></div>
+      <div class="field"><label>Nome da Mãe</label><span>${p.mae||'—'}</span></div>
+      <div class="field"><label>Nome do Pai</label><span>${p.pai||'—'}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Endereço</div>
+    <div class="grid">
+      <div class="field"><label>Endereço</label><span>${p.end||'—'}${p.num?', '+p.num:''}${p.comp?' - '+p.comp:''}</span></div>
+      <div class="field"><label>Bairro</label><span>${p.bairro||'—'}</span></div>
+      <div class="field"><label>Cidade / Estado</label><span>${p.cid||'—'}${p.est?' - '+p.est:''}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Situação Familiar e Social</div>
+    <div class="grid">
+      <div class="field"><label>Situação Conjugal</label><span>${p.conj||'—'}</span></div>
+      <div class="field"><label>Condição Residencial</label><span>${p.resid||'—'}</span></div>
+    </div>
+  </div>
+
+  <div class="termo">
+    <div class="termo-title">Autorização de Uso de Imagem</div>
+    <p>Eu, <strong>${p.nome}</strong>, portador(a) do CPF <strong>${p.cpf||'________________'}</strong>, RG <strong>${p.rg||'________________'}</strong>, residente em ${p.end||'___________'}${p.num?', '+p.num:''}, ${p.cid||'________'} - ${p.est||'__'}, <strong>AUTORIZO</strong> a ONG Ampare — Assistência Múltipla de Amparo Renovada a utilizar minha imagem e dados cadastrais para fins de identificação, divulgação institucional e relatórios sociais, de acordo com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018).</p>
+    <p>Declaro que as informações prestadas são verdadeiras e que estou ciente dos direitos e deveres estabelecidos pela entidade.</p>
+    <p>Ibiporã, _____ de __________________ de ________.</p>
+    <div class="assina">
+      <div class="assina-line">Assinatura do Beneficiário</div>
+      <div class="assina-line">Responsável pela ONG Ampare</div>
+      <div class="assina-line">Testemunha</div>
+    </div>
+  </div>
+  <script>window.onload=()=>window.print();<\/script>
+  </body></html>`);
+  w.document.close();
+}
+
+// Parar câmera ao trocar de página
+// Converter canvas QR para img antes de imprimir (garante funcionamento em todos os browsers)
+window.addEventListener('beforeprint', ()=>{
+  document.querySelectorAll('[id^="pqr-"]').forEach(box=>{
+    const canvas = box.querySelector('canvas');
+    if(canvas && !box.querySelector('img.qr-img')){
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      img.className = 'qr-img';
+      img.style.cssText = 'width:56px;height:56px;display:block';
+      canvas.replaceWith(img);
+    }
+  });
+});
+
+window.addEventListener('DOMContentLoaded',()=>{
+  // Restaurar estado do sidebar
+  if(localStorage.getItem('sb_mini')==='1'){
+    sbMini=true;
+    document.querySelector('.sb').classList.add('mini');
+    document.querySelector('.main').classList.add('mini');
+    document.querySelector('.sb-toggle').textContent='▶';
+  }
+  if(sessionStorage.getItem('amp_auth')==='1'){
+    document.getElementById('login-screen').style.display='none';
+    initApp();
+  }
+});
+</script>
+</body>
+</html>
