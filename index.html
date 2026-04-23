@@ -1230,10 +1230,9 @@ function getPerms(){
 }
 
 function setPerms(perms){
-  if(!perms) return;
   ['dashboard','beneficiarios','retiradas','coletor','relatorio','carteirinhas'].forEach(k=>{
     const el = document.getElementById('perm-'+k);
-    if(el) el.checked = perms[k] !== false;
+    if(el) el.checked = !perms || perms[k] !== false;
   });
 }
 
@@ -1290,6 +1289,8 @@ function openNovoUsuario(){
   document.getElementById('u-login').value='';
   document.getElementById('u-senha').value='';
   document.getElementById('u-perfil').value='operador';
+  togglePermissoes('operador');
+  setPerms(null); // reset todas marcadas
   document.getElementById('mo-usuario').classList.add('show');
 }
 
