@@ -285,6 +285,8 @@ textarea{resize:vertical;min-height:65px}
 .foto-av{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.3);flex-shrink:0}
 .foto-av-sm{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0}
 ::-webkit-scrollbar{width:5px}
+.sb-close-btn{display:none;background:none;border:none;color:rgba(255,255,255,.75);font-size:17px;cursor:pointer;padding:4px 8px;border-radius:6px;flex-shrink:0;line-height:1}
+.sb-close-btn:hover{color:#fff;background:rgba(255,255,255,.15)}
 .sb-close{display:none;background:none;border:none;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer;padding:4px 8px;border-radius:6px;flex-shrink:0}
 .sb-close:hover{color:#fff;background:rgba(255,255,255,.15)}
 
@@ -310,6 +312,8 @@ textarea{resize:vertical;min-height:65px}
   .mo{align-items:flex-end}
   .sb-close{display:flex;align-items:center;justify-content:center}
   .hamburger{align-items:center;justify-content:center}
+  .sb-close-btn{display:flex;align-items:center;justify-content:center}
+  .sb-toggle{display:none!important}
 }
 ::-webkit-scrollbar-thumb{background:#D1D5DB;border-radius:3px}
 </style>
@@ -337,7 +341,7 @@ textarea{resize:vertical;min-height:65px}
     <img id="sb-img" src="" alt="Ampare">
     <div style="flex:1"><div class="sb-nm">Ampare</div><div class="sb-sb">Gestão de ONG</div></div>
     <button class="sb-toggle" onclick="event.stopPropagation();toggleSidebar()" title="Minimizar menu">◀</button>
-    <button class="sb-close" onclick="fecharMenu()" title="Fechar menu">✕</button>
+    <button class="sb-close-btn" onclick="event.stopPropagation();fecharMenu()" title="Fechar">✕</button>
   </div>
   <div class="nav">
     <span class="nl">Visão Geral</span>
@@ -1459,9 +1463,10 @@ function toggleMenu(){
   const sb = document.querySelector('.sb');
   const overlay = document.getElementById('sb-overlay');
   const hb = document.getElementById('hamburger');
-  sb.classList.toggle('open');
-  overlay.classList.toggle('show');
-  hb.textContent = sb.classList.contains('open') ? '✕' : '☰';
+  const isOpen = !sb.classList.contains('open');
+  sb.classList.toggle('open', isOpen);
+  overlay.classList.toggle('show', isOpen);
+  hb.style.display = isOpen ? 'none' : 'flex'; // esconde hamburguer quando menu abre
 }
 function fecharMenu(){
   const sb = document.querySelector('.sb');
@@ -1469,7 +1474,7 @@ function fecharMenu(){
   const hb = document.getElementById('hamburger');
   sb.classList.remove('open');
   overlay.classList.remove('show');
-  hb.textContent = '☰';
+  if(window.innerWidth <= 768) hb.style.display = 'flex';
 }
 
 // ——— SIDEBAR TOGGLE ———
